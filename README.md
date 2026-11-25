@@ -1,6 +1,12 @@
 # mingle-cli
 
+<p align="center">
+  <img src="icon.png" width="128" alt="Official Mingle icon">
+</p>
+
 English · [简体中文](README.zh-CN.md)
+
+The picture above is the official Mingle icon, used here so the package is recognizable. This repository is still an unofficial packaging project.
 
 Unofficial headless Linux packaging of the [Mingle](https://github.com/earayu/Mingle) command-line interface. After installation, `mingle-cli` runs in a terminal with no `DISPLAY` and no Wayland session.
 
@@ -28,7 +34,25 @@ Both **linux-amd64** and **linux-arm64** are built. Each release contains:
 
 ## Install
 
-Pick the asset that matches `dpkg --print-architecture` (`amd64` or `arm64`). The version below is the current packaging revision; use the version attached to the GitHub Release you download.
+### One-line install
+
+Linux amd64 and arm64 only. [`install.sh`](install.sh) asks the GitHub API for this repository's latest stable release, checks the download against that release's `SHA256SUMS`, and installs it. It does not enable or start systemd. The script is not pinned to v0.4.11-1; a newer stable release is picked up automatically. Other operating systems and CPU architectures stop with an error.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
+```
+
+On Debian or Ubuntu, run it as root. When that release's `SHA256SUMS` lists the `.deb`, the script installs the package and the command is `mingle-cli`. The first release, v0.4.11-1, published checksums only for the `.tar.gz` archives, so the script installs that checked archive under `/usr/local` instead of the `.deb`. Later releases include the `.deb` in `SHA256SUMS`, and those installs use `dpkg`.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
+```
+
+Without root, the same command installs the `.tar.gz` under `~/.local` and tells you to add `~/.local/bin` to `PATH` if it is missing. The script never enables or starts systemd. A `.deb` install only reloads systemd from the package's postinst.
+
+### Download a release asset
+
+Pick the asset that matches `dpkg --print-architecture` (`amd64` or `arm64`). The version below is an example from the current packaging revision; use the version attached to the GitHub Release you download.
 
 ### Debian package
 

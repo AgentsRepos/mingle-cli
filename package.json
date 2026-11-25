@@ -11,7 +11,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:all": "node scripts/build.mjs --arch amd64 --arch arm64",
-    "test": "node --test scripts/packaging.test.mjs && node scripts/check-repo.mjs",
+    "test": "node --test scripts/packaging.test.mjs && node scripts/check-repo.mjs && sh scripts/install.test.sh",
     "check": "node scripts/check-repo.mjs"
   }
 }
