@@ -1,0 +1,22 @@
+mingle-cli
+==========
+
+This repository packages a headless Linux command-line interface for
+Mingle. It is an independent packaging project. It is not an official
+Mingle product, and it is not maintained by the Mingle authors.
+
+Mingle is copyright its authors and is released under the MIT License.
+Upstream project: https://github.com/earayu/Mingle
+
+This repository is also MIT licensed. See LICENSE.
+
+No source code from earayu/Mingle is committed here. Official release
+archives are downloaded when this package is built, checked against the
+SHA256SUMS file published with that release and against the checksums
+pinned in upstream.json, and then reduced to the files the headless
+Node CLI needs. The desktop entry, its WebKit shell, desktop launchers,
+and other GUI pieces are not packaged.
+
+The Node.js binary included in the build output is the one shipped
+inside the official Mingle Linux archive. Its license is copied from
+that archive at build time and installed beside the binary.

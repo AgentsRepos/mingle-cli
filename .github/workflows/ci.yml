@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check repository policy and unit tests
+        run: npm test
+
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install packaging tools
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y dpkg
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            # Ubuntu 26.04 replaced the qemu-user-static package with qemu-user-binfmt.
+            if apt-cache show qemu-user-binfmt 2>/dev/null | grep -q '^Package: qemu-user-binfmt$'; then
+              sudo apt-get install -y qemu-user qemu-user-binfmt libc6-arm64-cross libstdc++6-arm64-cross
+            else
+              sudo apt-get install -y qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross
+            fi
+          fi
+      - name: Build ${{ matrix.arch }}
+        run: node scripts/build.mjs --arch ${{ matrix.arch }}
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingle-cli-${{ matrix.arch }}
+          if-no-files-found: error
+          path: |
+            dist/*.tar.gz
+            dist/*.deb
+            dist/SHA256SUMS
