@@ -38,17 +38,27 @@ Both **linux-amd64** and **linux-arm64** are built. Each release contains:
 
 Linux amd64 and arm64 only. [`install.sh`](install.sh) asks the GitHub API for this repository's latest stable release, checks the download against that release's `SHA256SUMS`, and installs it. It does not enable or start systemd. The script is not pinned to v0.4.11-1; a newer stable release is picked up automatically. Other operating systems and CPU architectures stop with an error.
 
+The script looks in the current directory first. `curl | sh` uses the directory where you run it, and `./install.sh` uses that same directory. If `SHA256SUMS` and the matching package are already there and the checksum matches, those local files are installed and not downloaded again.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-On Debian or Ubuntu, run it as root. When that release's `SHA256SUMS` lists the `.deb`, the script installs the package and the command is `mingle-cli`. The first release, v0.4.11-1, published checksums only for the `.tar.gz` archives, so the script installs that checked archive under `/usr/local` instead of the `.deb`. Later releases include the `.deb` in `SHA256SUMS`, and those installs use `dpkg`.
+On Debian or Ubuntu, run it as root. v0.4.11-1's `SHA256SUMS` lists the `.tar.gz` archives and both `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package's postinst reloads systemd and does not enable or start the service.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
 ```
 
-Without root, the same command installs the `.tar.gz` under `~/.local` and tells you to add `~/.local/bin` to `PATH` if it is missing. The script never enables or starts systemd. A `.deb` install only reloads systemd from the package's postinst.
+Without root, the same command installs the `.tar.gz` under `~/.local` and tells you to add `~/.local/bin` to `PATH` if it is missing. A root install on a system without `dpkg` unpacks the archive into `/usr/local`.
+
+To save this machine's packages and `SHA256SUMS` in the current directory without installing them, run the installer you already have:
+
+```sh
+./install.sh --download
+```
+
+`MINGLE_CLI_DOWNLOAD=1 ./install.sh` is the same switch. It does not download or rewrite `install.sh`. After that, `./install.sh` or `sudo ./install.sh` in that directory reuses the saved files.
 
 ### Download a release asset
 
