@@ -33,7 +33,6 @@ export function shouldPackageCore(relPath) {
   const rel = normalizeRel(relPath);
   if (rel === "" || rel === ".") return true;
   const parts = rel.split("/");
-  if (parts[0] === "dist" && parts[1] === "web") return false;
   const base = parts[parts.length - 1];
   if (GUI_BASENAMES.has(base)) return false;
   if (rel.includes("linux-platform-x11") || rel.includes("pi-tui/native/linux")) return false;
@@ -51,10 +50,7 @@ export function isForbiddenBundlePath(relPath) {
   const base = parts[parts.length - 1];
   if (GUI_BASENAMES.has(base)) return true;
   if (rel.includes("linux-platform-x11") || rel.includes("pi-tui/native/linux")) return true;
-  // Official browser console: core/dist/web, staged under payload/dist/web.
-  // Dependency trees such as node_modules/@google/genai/dist/web stay.
-  const distAt = parts.indexOf("dist");
-  if (distAt >= 0 && parts[distAt + 1] === "web" && !parts.includes("node_modules")) return true;
+  // node_modules trees such as @google/genai/dist/web are not the desktop GUI.
   if (/libwebkit|webkit2gtk|javascriptcore/i.test(base)) return true;
   if (base.endsWith(".map") || DECLARATION.test(base)) return true;
   return false;

@@ -20,8 +20,7 @@
 | --- | --- |
 | `node/bin/node` 以及 Node.js 许可证 | mygo/WebKit 桌面程序（`mingle`） |
 | CLI 程序、它会加载的共享 JavaScript 和 npm 依赖 | 桌面启动器、图标、托盘图片 |
-| | 浏览器控制台（`core/dist/web`） |
-| | X11 剪贴板插件（`pi-tui/native/linux`，含 `linux-platform-x11.node`） |
+| 官方网页控制台（`core/dist/web`） | X11 剪贴板插件（`pi-tui/native/linux`，含 `linux-platform-x11.node`） |
 | | source map 和 TypeScript 声明文件 |
 
 打包后的命令是 `mingle-cli`，不是 `mingle`，因此不会占用官方桌面应用的命令名。上游帮助文本仍把命令写成 `mingle`。阅读那些示例时，把它理解成 `mingle-cli`。
@@ -126,7 +125,7 @@ mingle-cli harnesses
 mingle-cli log
 ```
 
-在有桌面的机器上，`--no-open` 是必要的：不加它时，`start` 会尝试打开控制台地址。本软件包不带浏览器控制台（`start` 会报告 `console not built`）。聊天应用相关命令和本地 API 仍然可用。若需要图形控制台，请使用官方 Mingle 桌面应用。
+没有显示器时，以及在桌面上又不希望 `start` 去打开浏览器时，请加上 `--no-open`。官方网页控制台包含在本软件包里。加上 `--no-open` 后，请自己用浏览器打开它打印的 `http://127.0.0.1:...` 地址，或上一节里转发后的地址。桌面图形界面不包含在内。
 
 创建 agent 和连接 Telegram 使用的是同一套上游命令。把 `mingle` 换成 `mingle-cli`：
 

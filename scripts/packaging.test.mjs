@@ -16,10 +16,10 @@ test("keeps the Node CLI payload and drops the desktop GUI", () => {
   assert.equal(shouldPackageCore("LICENSE"), true);
   assert.equal(shouldPackageCore("node_modules/hono/dist/index.js"), true);
   assert.equal(shouldPackageCore("dist/ssh-runtime.tgz"), true);
+  assert.equal(shouldPackageCore("dist/web"), true);
+  assert.equal(shouldPackageCore("dist/web/index.html"), true);
+  assert.equal(shouldPackageCore("dist/web/assets/index.js"), true);
 
-  assert.equal(shouldPackageCore("dist/web"), false);
-  assert.equal(shouldPackageCore("dist/web/index.html"), false);
-  assert.equal(shouldPackageCore("dist/web/assets/index.js"), false);
   assert.equal(shouldPackageCore("dist/cli/main.js.map"), false);
   assert.equal(shouldPackageCore("node_modules/pkg/index.d.ts"), false);
   assert.equal(shouldPackageCore("node_modules/pkg/index.d.mts"), false);
@@ -41,7 +41,7 @@ test("flags GUI and non-runtime files inside a staged bundle", () => {
   assert.equal(isForbiddenBundlePath("runtime/node"), false);
   assert.equal(isForbiddenBundlePath("mingle"), true);
   assert.equal(isForbiddenBundlePath("payload/mingle.desktop"), true);
-  assert.equal(isForbiddenBundlePath("payload/dist/web/index.html"), true);
+  assert.equal(isForbiddenBundlePath("payload/dist/web/index.html"), false);
   assert.equal(isForbiddenBundlePath("payload/node_modules/@google/genai/dist/web/index.mjs"), false);
   assert.equal(isForbiddenBundlePath("payload/dist/cli/main.js.map"), true);
   assert.equal(isForbiddenBundlePath("usr/share/icons/tray.png"), true);

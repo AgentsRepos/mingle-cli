@@ -20,8 +20,7 @@ Official Mingle Linux archives ship a desktop entry (`mingle`) built with mygo a
 | --- | --- |
 | `node/bin/node` and the Node.js license | mygo/WebKit desktop binary (`mingle`) |
 | CLI program, shared JavaScript, and the npm dependencies it loads | desktop launcher, icons, tray images |
-| | browser console (`core/dist/web`) |
-| | X11 clipboard addon (`pi-tui/native/linux`, including `linux-platform-x11.node`) |
+| official browser console (`core/dist/web`) | X11 clipboard addon (`pi-tui/native/linux`, including `linux-platform-x11.node`) |
 | | source maps and TypeScript declarations |
 
 The packaged command is `mingle-cli`, not `mingle`, so it does not take the official desktop app's name. Upstream help text still refers to the command as `mingle`. Read those examples as `mingle-cli`.
@@ -126,7 +125,7 @@ mingle-cli harnesses
 mingle-cli log
 ```
 
-`--no-open` matters on a machine that has a desktop: without it, `start` tries to open the console URL. There is no browser console in this package (`start` reports `console not built`). Chat-app commands and the local API still run. For the graphical console, use the official Mingle desktop app.
+`--no-open` matters on a machine that has no display, and also on a desktop if you do not want `start` to launch a browser. The official web console is included. With `--no-open`, open the printed `http://127.0.0.1:...` address yourself (or the forwarded address from the section above). The desktop app is not included.
 
 Creating an agent and connecting Telegram uses the same upstream commands. Substitute `mingle-cli` for `mingle`:
 
