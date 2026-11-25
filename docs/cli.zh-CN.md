@@ -1,5 +1,7 @@
 # mingle-cli 命令说明
 
+简体中文 · [English](cli.md)
+
 本文说明本非官方打包项目提供的无界面命令 `mingle-cli`。它不是官方 Mingle 手册。
 
 内容取自一次 Linux 构建：`mingle-cli --version` 打印 `0.4.11`。上游帮助文本仍把命令写成 `mingle`。这里安装的命令是 `mingle-cli`。下面引用程序原文时保留 `mingle`；你自己执行时请输入 `mingle-cli`。
