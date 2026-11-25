@@ -136,7 +136,7 @@ Do not commit, copy, or vendor source code from earayu/Mingle. Official release 
 
 ## Build
 
-The build tool is Node.js 20 or newer. Packaging also needs `tar` and `dpkg-deb` (from `dpkg`). Smoking arm64 on an amd64 machine needs `qemu-user-static`, `libc6-arm64-cross`, and `libstdc++6-arm64-cross`.
+The build tool is Node.js 20 or newer. Packaging also needs `tar` and `dpkg-deb` (from `dpkg`). Smoking arm64 on an amd64 machine needs `libc6-arm64-cross`, `libstdc++6-arm64-cross`, and QEMU user-mode emulation: `qemu-user-binfmt` on Ubuntu 26.04, or `qemu-user-static` on earlier Ubuntu releases.
 
 ```sh
 npm test

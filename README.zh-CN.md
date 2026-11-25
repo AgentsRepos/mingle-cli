@@ -136,7 +136,7 @@ systemctl --user disable --now mingle-cli
 
 ## 构建
 
-构建工具是 Node.js 20 或更新版本。打包还需要 `tar` 和 `dpkg-deb`（来自 `dpkg`）。在 amd64 机器上对 arm64 做冒烟测试时，需要 `qemu-user-static`、`libc6-arm64-cross` 和 `libstdc++6-arm64-cross`。
+构建工具是 Node.js 20 或更新版本。打包还需要 `tar` 和 `dpkg-deb`（来自 `dpkg`）。在 amd64 机器上对 arm64 做冒烟测试时，需要 `libc6-arm64-cross`、`libstdc++6-arm64-cross`，以及 QEMU 用户态模拟：Ubuntu 26.04 用 `qemu-user-binfmt`，更早的 Ubuntu 用 `qemu-user-static`。
 
 ```sh
 npm test

@@ -404,7 +404,9 @@ async function detectRunner(nodePath, arch) {
     detail = probe.stderr || probe.error || detail;
   }
   const extra = arch === "arm64" ? " and libc6-arm64-cross libstdc++6-arm64-cross" : "";
-  throw new Error(`cannot execute ${arch} node binary (${detail.trim()}). Install qemu-user-static${extra} to smoke a foreign architecture.`);
+  throw new Error(
+    `cannot execute ${arch} node binary (${detail.trim()}). Install qemu-user-binfmt (Ubuntu 26.04) or qemu-user-static${extra} to smoke a foreign architecture.`,
+  );
 }
 
 function makeRunner(nodePath, qemuPrefix, label) {

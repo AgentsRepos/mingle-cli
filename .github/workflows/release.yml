@@ -38,7 +38,18 @@ jobs:
             exit 1
           fi
       - name: Install packaging tools
-        run: sudo apt-get update && sudo apt-get install -y dpkg qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y dpkg
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            # Ubuntu 26.04 replaced the qemu-user-static package with qemu-user-binfmt.
+            if apt-cache show qemu-user-binfmt 2>/dev/null | grep -q '^Package: qemu-user-binfmt$'; then
+              sudo apt-get install -y qemu-user qemu-user-binfmt libc6-arm64-cross libstdc++6-arm64-cross
+            else
+              sudo apt-get install -y qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross
+            fi
+          fi
       - name: Test
         run: npm test
       - name: Build ${{ matrix.arch }}
