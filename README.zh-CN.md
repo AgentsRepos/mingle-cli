@@ -38,17 +38,28 @@
 
 只支持 Linux amd64 和 arm64。[`install.sh`](install.sh) 会通过 GitHub API 读取本仓库最新的正式 Release，用该 Release 里的 `SHA256SUMS` 校验下载，然后安装。它不会启用或启动 systemd。脚本不写死 v0.4.11-1，以后的正式版会自动用上。其他操作系统或 CPU 架构会直接报错退出。
 
+脚本会先看当前目录。`curl | sh` 用的是你执行命令时的目录，直接运行 `./install.sh` 也是这个目录。如果这里已经有匹配该 Release 的 `SHA256SUMS` 和安装包，并且校验通过，就直接用这些本地文件，不再从 GitHub 下载。
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-在 Debian 或 Ubuntu 上用 root 运行。如果该 Release 的 `SHA256SUMS` 里有对应 `.deb`，脚本会安装软件包，命令是 `mingle-cli`。第一个正式版 v0.4.11-1 的校验文件只包含 `.tar.gz`，所以脚本会把校验过的压缩包装到 `/usr/local`，而不是安装 `.deb`。之后的 Release 会把 `.deb` 写进 `SHA256SUMS`，那时才会用 `dpkg`。
+在 Debian 或 Ubuntu 上用 root 运行。v0.4.11-1 的 `SHA256SUMS` 已经包含两个 `.tar.gz` 和两个 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
 ```
 
-没有 root 时，同一条命令会把 `.tar.gz` 装到 `~/.local`，并在 `PATH` 里没有 `~/.local/bin` 时提示你加上。脚本从不启用或启动 systemd。`.deb` 安装时，软件包的 postinst 只会重新加载 systemd。
+没有 root 时，同一条命令会把 `.tar.gz` 装到 `~/.local`，并在 `PATH` 里没有 `~/.local/bin` 时提示你加上。已经是 root、但系统没有 `dpkg` 时，压缩包会解到 `/usr/local`。
+
+只把安装脚本和本机对应的安装包保存到当前目录、先不安装：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh -s -- --download
+./install.sh --download
+```
+
+`MINGLE_CLI_DOWNLOAD=1` 的效果相同。之后在这个目录里执行 `./install.sh` 或 `sudo ./install.sh`，就会复用已经保存的文件。
 
 ### 自行下载 Release 文件
 

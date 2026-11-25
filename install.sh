@@ -4,7 +4,10 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 #   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
+#   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh -s -- --download
 #
+# The current directory is scanned first. A package that matches SHA256SUMS
+# is installed without downloading it again. --download only saves files.
 # A Debian/Ubuntu machine with root installs the .deb. Otherwise the .tar.gz
 # is unpacked under /usr/local (when already root) or ~/.local. The systemd
 # unit is never enabled or started.
@@ -123,19 +126,126 @@ verify_file() {
   file=$1
   name=$2
   sums=$3
+  file_matches "$file" "$name" "$sums" || die "checksum mismatch for ${name}"
+  printf 'mingle-cli install: verified %s\n' "$name"
+}
+
+file_matches() {
+  file=$1
+  name=$2
+  sums=$3
   need sha256sum
-  expected=$(checksum_of "$name" "$sums") || die "SHA256SUMS has no entry for ${name}"
+  expected=$(checksum_of "$name" "$sums" 2>/dev/null) || return 1
   actual=$(sha256sum "$file" | awk '{print $1}')
   expected=$(printf '%s' "$expected" | tr 'A-F' 'a-f')
   actual=$(printf '%s' "$actual" | tr 'A-F' 'a-f')
-  [ "$expected" = "$actual" ] || die "checksum mismatch for ${name} (expected ${expected}, got ${actual})"
-  printf 'mingle-cli install: verified %s\n' "$name"
+  [ -n "$expected" ] && [ "$expected" = "$actual" ]
 }
 
 download() {
   url=$1
   dest=$2
   curl -fsSL -o "$dest" "$url" || die "download failed: ${url}"
+}
+
+resolve_sums() {
+  sums_url=$(require_asset "SHA256SUMS")
+  if [ -f ./SHA256SUMS ] && checksum_of "$tar_name" ./SHA256SUMS >/dev/null 2>&1; then
+    sums=./SHA256SUMS
+    printf 'mingle-cli install: using local SHA256SUMS\n'
+    return 0
+  fi
+  if [ -f ./SHA256SUMS ]; then
+    printf 'mingle-cli install: local SHA256SUMS does not match %s\n' "$tag" >&2
+  fi
+  sums=${tmp}/SHA256SUMS
+  download "$sums_url" "$sums"
+  printf 'mingle-cli install: downloaded SHA256SUMS\n'
+}
+
+take_file() {
+  name=$1
+  url=$2
+  if [ -f "./$name" ] && file_matches "./$name" "$name" "$sums"; then
+    printf 'mingle-cli install: using local %s\n' "$name"
+    payload=./$name
+    return 0
+  fi
+  if [ -f "./$name" ]; then
+    printf 'mingle-cli install: local %s failed verification, downloading\n' "$name" >&2
+  fi
+  payload=${tmp}/$name
+  download "$url" "$payload"
+  verify_file "$payload" "$name" "$sums"
+}
+
+save_asset() {
+  name=$1
+  url=$2
+  if ! checksum_of "$name" "$sums" >/dev/null 2>&1; then
+    printf 'mingle-cli install: %s is not listed in SHA256SUMS, skipped\n' "$name" >&2
+    return 0
+  fi
+  if [ -f "./$name" ] && file_matches "./$name" "$name" "$sums"; then
+    printf 'mingle-cli install: %s already in the current directory\n' "$name"
+    return 0
+  fi
+  download "$url" "${tmp}/$name"
+  file_matches "${tmp}/$name" "$name" "$sums" || die "checksum mismatch for ${name}"
+  mv "${tmp}/$name" "./$name"
+  printf 'mingle-cli install: saved %s\n' "$name"
+}
+
+place_installer() {
+  dest=$(pwd)/install.sh
+  src=
+  if [ -f "$0" ]; then
+    case "$0" in
+      /*) src=$0 ;;
+      *) src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0") ;;
+    esac
+  fi
+  if [ -n "$src" ] && [ "$src" = "$dest" ]; then
+    chmod 755 "$dest" 2>/dev/null || true
+    return 0
+  fi
+  if [ -n "$src" ] && grep -q 'mingle-cli install:' "$src"; then
+    cp "$src" "$dest"
+    chmod 755 "$dest"
+    printf 'mingle-cli install: saved install.sh\n'
+    return 0
+  fi
+  download "$INSTALL_URL" "${tmp}/install.sh"
+  mv "${tmp}/install.sh" "$dest"
+  chmod 755 "$dest"
+  printf 'mingle-cli install: saved install.sh\n'
+}
+
+parse_args() {
+  download_only=0
+  if [ "${MINGLE_CLI_DOWNLOAD:-}" = "1" ]; then
+    download_only=1
+  fi
+  for arg in "$@"; do
+    case "$arg" in
+      --download) download_only=1 ;;
+      -h|--help)
+        cat <<EOF
+Usage: install.sh [--download]
+
+Install the latest stable mingle-cli release for Linux amd64 or arm64.
+Files already in the current directory are used when they match SHA256SUMS.
+
+  --download    save install.sh, SHA256SUMS, and this machine's packages here
+  MINGLE_CLI_DOWNLOAD=1   same as --download
+
+This is not an official Mingle installer. It does not enable systemd.
+EOF
+        exit 0
+        ;;
+      *) die "unknown argument: ${arg}" ;;
+    esac
+  done
 }
 
 install_deb() {
@@ -186,6 +296,7 @@ install_tree() {
 }
 
 main() {
+  parse_args "$@"
   detect_platform
   need curl
   fetch_latest
@@ -194,16 +305,26 @@ main() {
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT INT TERM
 
-  sums_url=$(require_asset "SHA256SUMS")
-  download "$sums_url" "${tmp}/SHA256SUMS"
-
   deb_name="mingle-cli_${version}_${arch}.deb"
   tar_name="mingle-cli-${version}-linux-${arch}.tar.gz"
-  if can_system_install && command -v dpkg >/dev/null 2>&1 && checksum_of "$deb_name" "${tmp}/SHA256SUMS" >/dev/null 2>&1; then
-    deb_url=$(require_asset "$deb_name")
-    download "$deb_url" "${tmp}/${deb_name}"
-    verify_file "${tmp}/${deb_name}" "$deb_name" "${tmp}/SHA256SUMS"
-    install_deb "${tmp}/${deb_name}"
+  resolve_sums
+
+  if [ "$download_only" -eq 1 ]; then
+    if [ "$sums" != "./SHA256SUMS" ]; then
+      cp "$sums" ./SHA256SUMS
+      sums=./SHA256SUMS
+      printf 'mingle-cli install: saved SHA256SUMS\n'
+    fi
+    save_asset "$deb_name" "$(require_asset "$deb_name")"
+    save_asset "$tar_name" "$(require_asset "$tar_name")"
+    place_installer
+    printf 'mingle-cli install: files are in the current directory; run ./install.sh to install them\n'
+    return 0
+  fi
+
+  if can_system_install && command -v dpkg >/dev/null 2>&1 && checksum_of "$deb_name" "$sums" >/dev/null 2>&1; then
+    take_file "$deb_name" "$(require_asset "$deb_name")"
+    install_deb "$payload"
     return 0
   fi
 
@@ -211,13 +332,11 @@ main() {
     printf 'mingle-cli install: %s is not listed in this release SHA256SUMS, so the checked archive will be installed instead\n' "$deb_name" >&2
   fi
 
-  tar_url=$(require_asset "$tar_name")
-  download "$tar_url" "${tmp}/${tar_name}"
-  verify_file "${tmp}/${tar_name}" "$tar_name" "${tmp}/SHA256SUMS"
+  take_file "$tar_name" "$(require_asset "$tar_name")"
 
   if can_system_install; then
     use_root=1
-    install_tree "${tmp}/${tar_name}" /usr/local
+    install_tree "$payload" /usr/local
     if command -v dpkg >/dev/null 2>&1; then
       printf 'mingle-cli install: archive installed under /usr/local because the .deb has no published checksum\n'
     else
@@ -229,7 +348,7 @@ main() {
   [ -n "${HOME:-}" ] || die "HOME is not set; re-run as root to install system-wide: curl -fsSL ${INSTALL_URL} | sudo sh"
   use_root=0
   home_prefix=${HOME}/.local
-  install_tree "${tmp}/${tar_name}" "$home_prefix"
+  install_tree "$payload" "$home_prefix"
   printf 'mingle-cli install: no passwordless root access, so the .deb was not installed\n'
   printf 'mingle-cli install: a system-wide install needs: curl -fsSL %s | sudo sh\n' "$INSTALL_URL"
   case ":${PATH}:" in
