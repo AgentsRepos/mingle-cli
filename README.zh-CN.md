@@ -93,7 +93,7 @@ sha256sum -c SHA256SUMS
 
 ## 用法
 
-程序只监听 `127.0.0.1`。数据放在 `~/.mingle`。设置 `MINGLE_HOME` 可以换一个目录。
+程序只监听 `127.0.0.1`。数据放在 `~/.mingle`。设置 `MINGLE_HOME` 可以换一个目录。命令说明来自本软件包的 `mingle-cli --help` 以及 CLI 自己打印的用法，见 [docs/cli.zh-CN.md](docs/cli.zh-CN.md)。
 
 ```sh
 mingle-cli --help

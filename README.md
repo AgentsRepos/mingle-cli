@@ -93,7 +93,7 @@ sha256sum -c SHA256SUMS
 
 ## Usage
 
-The program listens on `127.0.0.1` only. Data is stored in `~/.mingle`. Set `MINGLE_HOME` to use a different directory.
+The program listens on `127.0.0.1` only. Data is stored in `~/.mingle`. Set `MINGLE_HOME` to use a different directory. The command reference, taken from this package's `mingle-cli --help` and the usage lines the CLI prints, is in [docs/cli.md](docs/cli.md).
 
 ```sh
 mingle-cli --help
