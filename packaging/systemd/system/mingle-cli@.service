@@ -1,0 +1,21 @@
+# Optional system template. This package does not enable it.
+# It runs as the account named by the instance, not as root:
+#   sudo systemctl enable --now mingle-cli@alice
+#   systemctl status mingle-cli@alice
+[Unit]
+Description=Mingle headless CLI for %i (unofficial mingle-cli package)
+Documentation=https://github.com/AgentsRepos/mingle-cli
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/bin/mingle-cli start --no-open
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

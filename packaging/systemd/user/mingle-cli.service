@@ -1,0 +1,21 @@
+# Optional user service. This package does not enable it.
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now mingle-cli
+# Keep it running with no graphical session:
+#   sudo loginctl enable-linger "$USER"
+[Unit]
+Description=Mingle headless CLI (unofficial mingle-cli package)
+Documentation=https://github.com/AgentsRepos/mingle-cli
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mingle-cli start --no-open
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

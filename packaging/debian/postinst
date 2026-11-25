@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+# Make packaged units visible. Do not enable or start them.
+if [ "$1" = "configure" ] && command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+fi
+
+exit 0

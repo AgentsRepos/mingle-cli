@@ -1,0 +1,17 @@
+{
+  "name": "mingle-cli",
+  "version": "0.4.11-1",
+  "private": true,
+  "license": "MIT",
+  "description": "Unofficial headless Linux packaging of the Mingle Node CLI. Not an official Mingle product.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:all": "node scripts/build.mjs --arch amd64 --arch arm64",
+    "test": "node --test scripts/packaging.test.mjs && node scripts/check-repo.mjs",
+    "check": "node scripts/check-repo.mjs"
+  }
+}

@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# Stop system instances only when the package is being removed.
+# Upgrades leave a running service in place; restart it after upgrade
+# if you want the new files. User services are not stopped from here.
+if [ "$1" = "remove" ] && command -v systemctl >/dev/null 2>&1; then
+  units=$(systemctl list-units --type=service --all --no-legend --plain 'mingle-cli@*' 2>/dev/null | awk '{print $1}' || true)
+  if [ -n "$units" ]; then
+    # shellcheck disable=SC2086
+    systemctl stop $units >/dev/null 2>&1 || true
+  fi
+fi
+
+exit 0
