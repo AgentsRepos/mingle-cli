@@ -1,6 +1,12 @@
 # mingle-cli
 
+<p align="center">
+  <img src="icon.png" width="128" alt="Mingle 官方图标">
+</p>
+
 简体中文 · [English](README.md)
+
+上面的图是 Mingle 官方图标，用来让这个软件包容易辨认。本仓库仍然是非官方打包项目。
 
 [Mingle](https://github.com/earayu/Mingle) 命令行界面的非官方 Linux 无界面打包。安装之后，`mingle-cli` 可以在没有 `DISPLAY`、也没有 Wayland 会话的终端里运行。
 
@@ -28,7 +34,25 @@
 
 ## 安装
 
-选择和 `dpkg --print-architecture`（`amd64` 或 `arm64`）一致的文件。下面的版本号是当前打包修订号；请改成你从 GitHub Release 下载的那个版本。
+### 一行安装
+
+只支持 Linux amd64 和 arm64。[`install.sh`](install.sh) 会通过 GitHub API 读取本仓库最新的正式 Release，用该 Release 里的 `SHA256SUMS` 校验下载，然后安装。它不会启用或启动 systemd。脚本不写死 v0.4.11-1，以后的正式版会自动用上。其他操作系统或 CPU 架构会直接报错退出。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
+```
+
+在 Debian 或 Ubuntu 上用 root 运行。如果该 Release 的 `SHA256SUMS` 里有对应 `.deb`，脚本会安装软件包，命令是 `mingle-cli`。第一个正式版 v0.4.11-1 的校验文件只包含 `.tar.gz`，所以脚本会把校验过的压缩包装到 `/usr/local`，而不是安装 `.deb`。之后的 Release 会把 `.deb` 写进 `SHA256SUMS`，那时才会用 `dpkg`。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
+```
+
+没有 root 时，同一条命令会把 `.tar.gz` 装到 `~/.local`，并在 `PATH` 里没有 `~/.local/bin` 时提示你加上。脚本从不启用或启动 systemd。`.deb` 安装时，软件包的 postinst 只会重新加载 systemd。
+
+### 自行下载 Release 文件
+
+选择和 `dpkg --print-architecture`（`amd64` 或 `arm64`）一致的文件。下面的版本号是当前打包修订号的例子；请改成你从 GitHub Release 下载的那个版本。
 
 ### Debian 软件包
 
