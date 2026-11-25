@@ -77,7 +77,7 @@ When a required argument is missing, the CLI prints its own usage line. These ar
 | `connect alex` with no token on stdin | `pass the bot token from @BotFather on standard input` |
 | `disconnect` | `usage: mingle disconnect <connection-id>` |
 
-`--port` is the listen port shown in help as `7419`. This package's `start` reports `console not built` because the browser console is not included; use `--no-open` so it does not try to open a URL. `log --lines` defaults to 200 in the help text. A non-integer `--lines` is rejected with `invalid_lines` and the example `--lines 300`.
+`--port` is the listen port shown in help as `7419`. The process still binds `127.0.0.1` only; `--help` has no `--host` option. To reach it from another machine without changing that, see [Reach it from another machine](../README.md#reach-it-from-another-machine). This package's `start` reports `console not built` because the browser console is not included; use `--no-open` so it does not try to open a URL. `log --lines` defaults to 200 in the help text. A non-integer `--lines` is rejected with `invalid_lines` and the example `--lines 300`.
 
 `mingle-cli proxy` with no further argument is accepted and then requires a running server. In this 0.4.11 CLI, `mingle-cli proxy system`, `mingle-cli proxy off`, and `mingle-cli proxy set` are rejected as `unknown_command`, even though `--help` prints those words on the `proxy` line.
 

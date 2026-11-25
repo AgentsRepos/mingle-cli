@@ -95,6 +95,28 @@ sha256sum -c SHA256SUMS
 
 程序只监听 `127.0.0.1`。数据放在 `~/.mingle`。设置 `MINGLE_HOME` 可以换一个目录。命令说明来自本软件包的 `mingle-cli --help` 以及 CLI 自己打印的用法，见 [docs/cli.zh-CN.md](docs/cli.zh-CN.md)。
 
+### 从其他机器访问
+
+官方 Mingle v0.4.11 把 API 绑在 `127.0.0.1`。`mingle-cli start` 只有 `--port` 和 `--no-open`，没有 `--host`，也不能改成监听 `0.0.0.0`。本打包项目没有改上游的这一行为，也不为此重新发布版本。
+
+`mingle-cli` 已经占用 `127.0.0.1:7419`。不要在同一台机器上再把转发程序绑到 `7419`，`0.0.0.0:7419` 会和它冲突。先安装 `socat`，然后在运行 Mingle 的这台机器上改用另一个对外端口：
+
+```sh
+socat TCP-LISTEN:7420,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:7419
+```
+
+在其他机器上打开 `http://<这台机器的地址>:7420`。
+
+这样做会把本机 API 暴露到网络上。只建议在受信网络使用，并用防火墙限制这个端口。
+
+更稳妥的做法是 SSH 本地转发，让 API 不直接出现在局域网上。在另一台机器上执行：
+
+```sh
+ssh -N -L 7419:127.0.0.1:7419 user@mingle-host
+```
+
+然后在那台机器上打开 `http://127.0.0.1:7419`。
+
 ```sh
 mingle-cli --help
 mingle-cli --version
