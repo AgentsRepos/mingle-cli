@@ -52,14 +52,13 @@ curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install
 
 没有 root 时，同一条命令会把 `.tar.gz` 装到 `~/.local`，并在 `PATH` 里没有 `~/.local/bin` 时提示你加上。已经是 root、但系统没有 `dpkg` 时，压缩包会解到 `/usr/local`。
 
-只把安装脚本和本机对应的安装包保存到当前目录、先不安装：
+只把本机对应的安装包和 `SHA256SUMS` 保存到当前目录、先不安装时，用你已经有的安装脚本：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh -s -- --download
 ./install.sh --download
 ```
 
-`MINGLE_CLI_DOWNLOAD=1` 的效果相同。之后在这个目录里执行 `./install.sh` 或 `sudo ./install.sh`，就会复用已经保存的文件。
+`MINGLE_CLI_DOWNLOAD=1 ./install.sh` 的效果相同。它不会下载或改写 `install.sh`。之后在这个目录里执行 `./install.sh` 或 `sudo ./install.sh`，就会复用已经保存的文件。
 
 ### 自行下载 Release 文件
 

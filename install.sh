@@ -4,10 +4,11 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 #   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
-#   curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh -s -- --download
+#   ./install.sh --download
 #
 # The current directory is scanned first. A package that matches SHA256SUMS
-# is installed without downloading it again. --download only saves files.
+# is installed without downloading it again. --download saves SHA256SUMS and
+# this machine's packages only. It does not write install.sh.
 # A Debian/Ubuntu machine with root installs the .deb. Otherwise the .tar.gz
 # is unpacked under /usr/local (when already root) or ~/.local. The systemd
 # unit is never enabled or started.
@@ -196,31 +197,6 @@ save_asset() {
   printf 'mingle-cli install: saved %s\n' "$name"
 }
 
-place_installer() {
-  dest=$(pwd)/install.sh
-  src=
-  if [ -f "$0" ]; then
-    case "$0" in
-      /*) src=$0 ;;
-      *) src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0") ;;
-    esac
-  fi
-  if [ -n "$src" ] && [ "$src" = "$dest" ]; then
-    chmod 755 "$dest" 2>/dev/null || true
-    return 0
-  fi
-  if [ -n "$src" ] && grep -q 'mingle-cli install:' "$src"; then
-    cp "$src" "$dest"
-    chmod 755 "$dest"
-    printf 'mingle-cli install: saved install.sh\n'
-    return 0
-  fi
-  download "$INSTALL_URL" "${tmp}/install.sh"
-  mv "${tmp}/install.sh" "$dest"
-  chmod 755 "$dest"
-  printf 'mingle-cli install: saved install.sh\n'
-}
-
 parse_args() {
   download_only=0
   if [ "${MINGLE_CLI_DOWNLOAD:-}" = "1" ]; then
@@ -236,7 +212,7 @@ Usage: install.sh [--download]
 Install the latest stable mingle-cli release for Linux amd64 or arm64.
 Files already in the current directory are used when they match SHA256SUMS.
 
-  --download    save install.sh, SHA256SUMS, and this machine's packages here
+  --download    save SHA256SUMS and this machine's .deb and .tar.gz here
   MINGLE_CLI_DOWNLOAD=1   same as --download
 
 This is not an official Mingle installer. It does not enable systemd.
@@ -317,8 +293,7 @@ main() {
     fi
     save_asset "$deb_name" "$(require_asset "$deb_name")"
     save_asset "$tar_name" "$(require_asset "$tar_name")"
-    place_installer
-    printf 'mingle-cli install: files are in the current directory; run ./install.sh to install them\n'
+    printf 'mingle-cli install: SHA256SUMS and packages are in the current directory\n'
     return 0
   fi
 

@@ -141,10 +141,10 @@ log2=${work}/curl-download.log
     PATH="${bin}:${PATH}" \
     sh "$install" --download
 )
-[ -f "$dl/install.sh" ] || fail "download mode did not save install.sh"
 [ -f "$dl/SHA256SUMS" ] || fail "download mode did not save SHA256SUMS"
 [ -f "$dl/mingle-cli-0.4.11-1-linux-amd64.tar.gz" ] || fail "download mode did not save the archive"
 [ -f "$dl/mingle-cli_0.4.11-1_amd64.deb" ] || fail "download mode did not save the deb"
+[ ! -e "$dl/install.sh" ] || fail "download mode wrote install.sh"
 [ ! -e "$dl/.local" ] || fail "download mode installed files"
 printf 'ok download mode\n'
 

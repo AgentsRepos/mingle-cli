@@ -52,14 +52,13 @@ curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install
 
 Without root, the same command installs the `.tar.gz` under `~/.local` and tells you to add `~/.local/bin` to `PATH` if it is missing. A root install on a system without `dpkg` unpacks the archive into `/usr/local`.
 
-To save the installer and this machine's packages in the current directory without installing them:
+To save this machine's packages and `SHA256SUMS` in the current directory without installing them, run the installer you already have:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh -s -- --download
 ./install.sh --download
 ```
 
-`MINGLE_CLI_DOWNLOAD=1` is the same switch. After that, `./install.sh` or `sudo ./install.sh` in that directory reuses the saved files.
+`MINGLE_CLI_DOWNLOAD=1 ./install.sh` is the same switch. It does not download or rewrite `install.sh`. After that, `./install.sh` or `sudo ./install.sh` in that directory reuses the saved files.
 
 ### Download a release asset
 
