@@ -264,10 +264,19 @@ install_tree() {
     fi
   done
   run_as_owner cp -a "$top/mingle-cli" "${bindir}/mingle-cli"
+  if [ -e "$top/mingle-cli-service" ]; then
+    run_as_owner cp -a "$top/mingle-cli-service" "${bindir}/mingle-cli-service"
+  fi
   run_as_owner chmod 755 "${bindir}/mingle-cli" "${lib}/runtime/node"
+  if [ -e "${bindir}/mingle-cli-service" ]; then
+    run_as_owner chmod 755 "${bindir}/mingle-cli-service"
+  fi
 
   printf 'mingle-cli install: installed %s\n' "$(basename "$archive")"
   printf 'mingle-cli install: command: %s\n' "${bindir}/mingle-cli"
+  if [ -x "${bindir}/mingle-cli-service" ]; then
+    printf 'mingle-cli install: service helper: %s\n' "${bindir}/mingle-cli-service"
+  fi
   printf 'mingle-cli install: the systemd unit was not installed from this archive and was not started\n'
 }
 

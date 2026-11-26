@@ -3,6 +3,11 @@
 #   systemctl --user enable --now mingle-cli
 # Keep it running with no graphical session:
 #   sudo loginctl enable-linger "$USER"
+# From a user shell (this does not enable the unit):
+#   mingle-cli-service start|stop|restart|status
+# ExecStart is `run`: it reads this user's HOME, prepends tool directories
+# that exist, may set OAR_DSH_BIN, then runs mingle-cli start --no-open.
+# A drop-in value of OAR_DSH_BIN is kept.
 [Unit]
 Description=Mingle headless CLI (unofficial mingle-cli package)
 Documentation=https://github.com/AgentsRepos/mingle-cli
@@ -11,7 +16,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/mingle-cli start --no-open
+ExecStart=/usr/bin/mingle-cli-service run
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=20

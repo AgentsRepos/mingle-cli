@@ -28,7 +28,7 @@
 **linux-amd64** 和 **linux-arm64** 都会构建。每个 Release 包含：
 
 - 一份独立压缩包，其中的可执行文件是 `mingle-cli`
-- 一个 `.deb`，安装 `/usr/bin/mingle-cli` 和一个 systemd 单元
+- 一个 `.deb`，安装 `/usr/bin/mingle-cli`、`/usr/bin/mingle-cli-service` 和 systemd 单元
 - `SHA256SUMS`
 
 ## 安装
@@ -43,7 +43,7 @@
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。
+在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包同时安装 `/usr/bin/mingle-cli-service`。用户单元和系统单元调用 `mingle-cli-service run`。在你自己的会话里，`mingle-cli-service start`、`stop`、`restart` 和 `status` 管理用户单元。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。细节见 [systemd](#systemd)。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -82,7 +82,7 @@ cd mingle-cli-0.4.11-2-linux-amd64
 ./mingle-cli --version
 ```
 
-压缩包本身是完整的。可以把那个目录挪到任何位置，再从里面运行 `mingle-cli`。
+压缩包本身是完整的。可以把那个目录挪到任何位置，再从里面运行 `mingle-cli`。`mingle-cli-service` 和 `mingle-cli` 放在一起。systemd 单元文件由 `.deb` 安装。
 
 解压前先核对下载：
 
@@ -181,11 +181,56 @@ systemctl status mingle-cli@alice
 
 `alice` 必须是真实用户。模板单元是 `mingle-cli@.service`。没有默认以 root 运行的系统单元。
 
-进程执行的是 `mingle-cli start --no-open`。软件包升级之后，重启你启用过的服务，它才会用上新文件：
+两个单元都通过 `/usr/bin/mingle-cli-service run` 启动。这个 helper 属于本软件包，不是上游 Mingle 的子命令。`run` 会把服务账号家目录下实际存在的目录补到 `PATH` 前面，原来的 `PATH` 仍留在后面。然后它用包内的 Node 运行 `mingle-cli start --no-open`。
+
+这些目录是：
+
+- `$HOME/.local/share/mise/shims`
+- `$HOME/.local/share/mise/installs/node/latest/bin`
+- `$HOME/.local/bin`
+- 当这条 `PATH` 上已经能找到 `npm`，并且 `npm config get prefix` 打印出绝对前缀、其 `bin` 目录也存在时，再加上 `$PREFIX/bin`
+
+用户服务使用该用户的家目录。`mingle-cli@alice` 使用 alice 的家目录，因为模板设置了 `User=%i`，systemd 会为这个账号设置 `HOME`。helper 在服务进程里执行，所以开机只靠 linger 也会生效。它直接读这个家目录，不读登录 shell，也不读 `~/.bashrc`，也不使用 `systemctl import-environment`。单元里的 `Environment=` 不会展开 `$(which dsh)`。
+
+Mingle 在 `PATH` 里找到 `dsh`，或者 `OAR_DSH_BIN` 指向它时，会把 DeepSeek Harness 视为已安装。`OAR_DSH_BIN` 未设置或为空，并且加长后的 `PATH` 上有 `dsh` 时，`run` 会导出这个路径。已经设好的值保持不变，因此 drop-in 仍然优先。这里要写绝对路径：
+
+```ini
+# ~/.config/systemd/user/mingle-cli.service.d/dsh.conf
+# 或 /etc/systemd/system/mingle-cli@alice.service.d/dsh.conf
+[Service]
+Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/dsh
+```
+
+加上这个文件之后，重新加载并重启你启用过的服务。
+
+在已经能使用 `systemctl --user` 的 shell 里（见上面的 `XDG_RUNTIME_DIR` 步骤），同一个 helper 管理用户单元：
 
 ```sh
-systemctl --user restart mingle-cli
-# 或者
+mingle-cli-service start
+mingle-cli-service stop
+mingle-cli-service restart
+mingle-cli-service status
+```
+
+`start` 会启动用户单元。单元已经在跑时，它不会重启那个进程。它会等到进程开始听端口，然后在当前终端打印带 `#token=` 的控制台 URL。如果启动前就已经在跑，打印的是当前这条 URL。`restart` 会重启单元，等到新进程开始听端口后，打印新的 URL。这一行里的 token 是新进程生成的。`stop` 停止用户单元。`status` 显示 `systemctl --user status`；控制台已经在听端口时，同样带上这条 URL。
+
+这些命令不会 enable 单元。它们不会运行 `mingle open`，因此不需要显示器。URL 来自 `~/.mingle/runtime.json`；设置了 `MINGLE_HOME` 时则来自 `$MINGLE_HOME/runtime.json`。只有该端口已经接受连接时才会打印。服务也要使用这个目录时，请在 unit drop-in 里同样设置 `MINGLE_HOME`。
+
+`mingle-cli-service env` 打印当前进程里 `run` 会使用的 `PATH` 和 `OAR_DSH_BIN`。登录 shell 的 `PATH` 通常比服务更宽。要看服务眼里的环境：
+
+```sh
+env -i HOME="$HOME" USER="$USER" \
+  PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  mingle-cli-service env
+```
+
+系统模板仍用 `sudo systemctl` 管理，例如 `sudo systemctl restart mingle-cli@alice`。`mingle-cli-service start` 只作用于用户单元。
+
+软件包升级之后，重启你启用过的服务，它才会用上新文件。对用户单元，这条命令同时打印新的控制台 URL：
+
+```sh
+mingle-cli-service restart
+# 系统模板则用：
 sudo systemctl restart mingle-cli@alice
 ```
 

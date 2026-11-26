@@ -28,7 +28,7 @@ The packaged command is `mingle-cli`, not `mingle`, so it does not take the offi
 Both **linux-amd64** and **linux-arm64** are built. Each release contains:
 
 - a standalone archive whose executable is `mingle-cli`
-- a `.deb` that installs `/usr/bin/mingle-cli` and a systemd unit
+- a `.deb` that installs `/usr/bin/mingle-cli`, `/usr/bin/mingle-cli-service`, and systemd units
 - `SHA256SUMS`
 
 ## Install
@@ -43,7 +43,7 @@ The script looks in the current directory first. `curl | sh` uses the directory 
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package's postinst reloads systemd and does not enable or start the service.
+On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package also installs `/usr/bin/mingle-cli-service`. User and system units call `mingle-cli-service run`. From your own session, `mingle-cli-service start`, `stop`, `restart`, and `status` control the user unit. The package's postinst reloads systemd and does not enable or start the service. Details are in [systemd](#systemd).
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -82,7 +82,7 @@ cd mingle-cli-0.4.11-2-linux-amd64
 ./mingle-cli --version
 ```
 
-The archive is self-contained. You can move that directory anywhere and run `mingle-cli` from it.
+The archive is self-contained. You can move that directory anywhere and run `mingle-cli` from it. `mingle-cli-service` is next to `mingle-cli`. The systemd unit files come with the `.deb`.
 
 Check the download before you unpack it:
 
@@ -181,11 +181,56 @@ systemctl status mingle-cli@alice
 
 `alice` must be a real user. The template unit is `mingle-cli@.service`. There is no default system unit that runs as root.
 
-The process is `mingle-cli start --no-open`. After a package upgrade, restart the service you enabled so it picks up the new files:
+Both units start through `/usr/bin/mingle-cli-service run`. That helper is part of this package. It is not an upstream Mingle command. `run` prepends directories that exist under the service account's home, then keeps the rest of `PATH`. It runs the bundled Node CLI as `mingle-cli start --no-open`.
+
+The directories are:
+
+- `$HOME/.local/share/mise/shims`
+- `$HOME/.local/share/mise/installs/node/latest/bin`
+- `$HOME/.local/bin`
+- `$PREFIX/bin`, when `npm` can be resolved on that `PATH` and `npm config get prefix` prints an absolute prefix whose `bin` directory exists
+
+A user service uses that user's home. `mingle-cli@alice` uses alice's home, because the template sets `User=%i` and systemd sets `HOME` for that account. The helper runs in the service process, so linger at boot is enough. It reads that home itself. It does not read a login shell or `~/.bashrc`, and it does not use `systemctl import-environment`. A unit's `Environment=` line does not expand `$(which dsh)`.
+
+Mingle treats the DeepSeek Harness as installed when `dsh` is on `PATH`, or when `OAR_DSH_BIN` points at it. If `OAR_DSH_BIN` is unset or empty and `dsh` is on the augmented `PATH`, `run` exports that path. A value that is already set stays as it is, so a drop-in still wins. Use a literal path:
+
+```ini
+# ~/.config/systemd/user/mingle-cli.service.d/dsh.conf
+# or /etc/systemd/system/mingle-cli@alice.service.d/dsh.conf
+[Service]
+Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/dsh
+```
+
+Reload and restart the service you enabled after adding that file.
+
+From a shell that can already reach `systemctl --user` (the `XDG_RUNTIME_DIR` steps above), the same helper controls the user unit:
 
 ```sh
-systemctl --user restart mingle-cli
-# or
+mingle-cli-service start
+mingle-cli-service stop
+mingle-cli-service restart
+mingle-cli-service status
+```
+
+`start` starts the user unit. When the unit is already running, it leaves that process in place. It waits until the process is listening, then prints the console URL in this terminal, including `#token=`. If the unit was already running, that line is the current URL. `restart` restarts the unit and waits until the new process is listening, then prints the new URL. The token in that line is the one created by the new process. `stop` stops the user unit. `status` shows `systemctl --user status` and, when the console is listening, the same URL.
+
+These commands do not enable the unit. They do not run `mingle open`, and they do not need a display. The URL is taken from `~/.mingle/runtime.json`, or from `$MINGLE_HOME/runtime.json` when `MINGLE_HOME` is set. It is printed only after that port accepts a connection. Set `MINGLE_HOME` in a unit drop-in as well when the service should use the same directory.
+
+`mingle-cli-service env` prints the `PATH` and `OAR_DSH_BIN` that `run` would use in the current process. A login shell usually has a broader `PATH` than a service. To see the service view:
+
+```sh
+env -i HOME="$HOME" USER="$USER" \
+  PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  mingle-cli-service env
+```
+
+The system template is still controlled with `sudo systemctl`, for example `sudo systemctl restart mingle-cli@alice`. `mingle-cli-service start` talks to the user unit only.
+
+After a package upgrade, restart the service you enabled so it picks up the new files. For the user unit, this also prints the new console URL:
+
+```sh
+mingle-cli-service restart
+# or, for the system template:
 sudo systemctl restart mingle-cli@alice
 ```
 

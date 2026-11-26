@@ -86,9 +86,11 @@ pkg_dir=${work}/pkg
 mkdir -p "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime" \
   "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/payload/dist/cli"
 printf '%s\n' '#!/bin/sh' 'echo 0.4.11' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli"
+printf '%s\n' '#!/bin/sh' 'echo service' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli-service"
 printf 'node\n' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime/node"
 printf 'console\n' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/payload/dist/cli/main.js"
 chmod 755 "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli" \
+  "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli-service" \
   "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime/node"
 tar -C "$pkg_dir" -czf "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64.tar.gz" mingle-cli-0.4.11-1-linux-amd64
 printf 'deb\n' > "$pkg_dir/mingle-cli_0.4.11-1_amd64.deb"
@@ -128,6 +130,8 @@ if grep -q 'linux-amd64.tar.gz' "$log"; then
 fi
 got=$("$home/.local/bin/mingle-cli")
 [ "$got" = "0.4.11" ] || fail "local launcher printed ${got}"
+got_service=$("$home/.local/bin/mingle-cli-service")
+[ "$got_service" = "service" ] || fail "service helper printed ${got_service}"
 printf 'ok local archive\n'
 
 dl=${work}/download
