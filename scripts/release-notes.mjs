@@ -11,7 +11,7 @@ The desktop GUI is omitted. The official browser console is included; without a 
 
 The downloadable archive contains the \`mingle-cli\` executable and the Node runtime it needs.
 The .deb installs that executable, \`mingle-cli-service\`, and a systemd unit. The unit is not enabled automatically.
-This revision ships \`mingle-cli-service\` with the packaging. It is not an official Mingle command. It prepends \`PATH\` from the service account's home and discovers \`dsh\`, setting \`OAR_DSH_BIN\` when that variable is unset. \`mingle-cli-service start\`, \`stop\`, \`restart\`, and \`status\` proxy the user unit. \`start\` and \`restart\` print the console URL, including \`#token=\`.
+This revision brings pull request #14's user-bus environment fill into the packaging helper \`mingle-cli-service\`. It is not an official Mingle command. Before \`start\`, \`stop\`, \`restart\`, and \`status\` call \`systemctl --user\`, the helper fills \`XDG_RUNTIME_DIR\` and \`DBUS_SESSION_BUS_ADDRESS\` when they are unset and the user manager is already running. It still prepends \`PATH\` from the service account's home and discovers \`dsh\`, setting \`OAR_DSH_BIN\` when that variable is unset. \`start\` and \`restart\` print the console URL, including \`#token=\`.
 
 ### Online install
 
@@ -56,7 +56,7 @@ Verify downloads with SHA256SUMS. Install and service instructions are in the re
 
 可下载的压缩包包含 \`mingle-cli\` 可执行文件及其所需的 Node 运行时。
 \`.deb\` 会安装该可执行文件、\`mingle-cli-service\` 和一个 systemd 单元，不会自动 enable。
-本修订随包装发布 \`mingle-cli-service\`（动态补 PATH / 发现 dsh，并代理用户单元的 start/stop/restart/status；start/restart 会打印带 \`#token=\` 的控制台 URL）。它不是官方 Mingle 的命令。\`run\` 在找到 \`dsh\` 且 \`OAR_DSH_BIN\` 未设置时写入该变量。
+本修订把 PR #14 的用户总线环境补齐带进了包装助手 \`mingle-cli-service\`。它不是官方 Mingle 的命令。在 \`start\`、\`stop\`、\`restart\` 和 \`status\` 调用 \`systemctl --user\` 之前，若 \`XDG_RUNTIME_DIR\` 与 \`DBUS_SESSION_BUS_ADDRESS\` 未设置且用户管理器已在运行，助手会补上这两个变量。它仍会动态补 PATH / 发现 dsh，并在找到 \`dsh\` 且 \`OAR_DSH_BIN\` 未设置时写入该变量。start/restart 会打印带 \`#token=\` 的控制台 URL。
 
 ### 在线安装
 

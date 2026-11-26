@@ -248,7 +248,7 @@ systemctl --user disable --now mingle-cli
 
 [earayu/Mingle](https://github.com/earayu/Mingle) 是上游项目。它的 Linux 发行物是一个桌面应用，里面同时带有这个 Node CLI。`mingle-cli` 包装的是已经发布的那个 CLI。它不 fork Mingle 的源代码，也不另写一套 agent 实现。
 
-构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。上游 `0.4.11` 的第一次打包版本是 `0.4.11-1`。当前打包修订号是 `0.4.11-3`。本修订随包装发布 `mingle-cli-service`（动态补 PATH / 发现 dsh，并代理用户单元的 start/stop/restart/status；start/restart 会打印带 `#token=` 的控制台 URL）。它不是官方 Mingle。
+构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。上游 `0.4.11` 的第一次打包版本是 `0.4.11-1`。当前打包修订号是 `0.4.11-4`。本修订把 PR #14 的用户总线环境补齐带进了包装助手 `mingle-cli-service`：在 `start`、`stop`、`restart` 和 `status` 调用 `systemctl --user` 之前，若 `XDG_RUNTIME_DIR` 与 `DBUS_SESSION_BUS_ADDRESS` 未设置且用户管理器已在运行，助手会补上这两个变量。它不是官方 Mingle。
 
 ## 仓库中不存放上游源代码
 
@@ -272,10 +272,10 @@ npm run build:all
 产物：
 
 ```text
-dist/mingle-cli-0.4.11-3-linux-amd64.tar.gz
-dist/mingle-cli_0.4.11-3_amd64.deb
-dist/mingle-cli-0.4.11-3-linux-arm64.tar.gz
-dist/mingle-cli_0.4.11-3_arm64.deb
+dist/mingle-cli-0.4.11-4-linux-amd64.tar.gz
+dist/mingle-cli_0.4.11-4_amd64.deb
+dist/mingle-cli-0.4.11-4-linux-arm64.tar.gz
+dist/mingle-cli_0.4.11-4_arm64.deb
 dist/SHA256SUMS
 ```
 
@@ -288,8 +288,8 @@ GitHub Actions 只有在该工作流已经位于默认分支、并且推送了�
 3. 在那个 `main` 提交上，为打包版本打标签（`upstreamVersion` + `-` + `packagingRevision`）：
 
    ```sh
-   git tag v0.4.11-3
-   git push origin v0.4.11-3
+   git tag v0.4.11-4
+   git push origin v0.4.11-4
    ```
 
 4. **Release** 工作流会构建 linux-amd64 和 linux-arm64，运行无界面冒烟测试，并为该标签创建 GitHub Release。它会上传两份压缩包、两个 `.deb` 和 `SHA256SUMS`。
