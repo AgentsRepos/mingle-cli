@@ -77,7 +77,7 @@ next: Mingle is not running. Start it with "mingle start"
 | `connect alex` 且标准输入没有 token | `pass the bot token from @BotFather on standard input` |
 | `disconnect` | `usage: mingle disconnect <connection-id>` |
 
-`--port` 是帮助里写的监听端口，示例为 `7419`。进程仍然只绑在 `127.0.0.1` 上，`--help` 里没有 `--host`。若要不改这一点就从其他机器访问，见 [从其他机器访问](../README.zh-CN.md#从其他机器访问)。本软件包的 `start` 会报告 `console not built`，因为没有附带浏览器控制台；请加上 `--no-open`，避免它去打开网址。帮助里 `log --lines` 的默认值是 200。`--lines` 不是整数时会被拒绝，错误码是 `invalid_lines`，示例为 `--lines 300`。
+`--port` 是帮助里写的监听端口，示例为 `7419`。进程仍然只绑在 `127.0.0.1` 上，`--help` 里没有 `--host`。若要不改这一点就从其他机器访问，见 [从其他机器访问](../README.zh-CN.md#从其他机器访问)。官方网页控制台包含在本软件包里。没有显示器时请加上 `--no-open`，再用浏览器打开它打印的地址。帮助里 `log --lines` 的默认值是 200。`--lines` 不是整数时会被拒绝，错误码是 `invalid_lines`，示例为 `--lines 300`。
 
 不带后续参数的 `mingle-cli proxy` 会被接受，然后要求服务已经在运行。在这个 0.4.11 的 CLI 里，`mingle-cli proxy system`、`mingle-cli proxy off` 和 `mingle-cli proxy set` 会被当成 `unknown_command` 拒绝，尽管 `--help` 的 `proxy` 那一行写了这几个词。
 

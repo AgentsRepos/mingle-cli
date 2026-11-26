@@ -7,6 +7,7 @@ const install = "https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/i
 
 process.stdout.write(`This is an unofficial headless Linux packaging of [Mingle](https://github.com/earayu/Mingle) v${upstream.version}.
 It is not an official Mingle product.
+The desktop GUI is omitted. The official browser console is included; without a display, start with --no-open and open the printed URL in a browser.
 
 The downloadable archive contains the \`mingle-cli\` executable and the Node runtime it needs.
 The .deb installs that executable and a systemd unit. The unit is not enabled automatically.
@@ -48,8 +49,9 @@ Verify downloads with SHA256SUMS. Install and service instructions are in the re
 
 ---
 
-这是基于 [Mingle](https://github.com/earayu/Mingle) v${upstream.version} 的非官方、无图形界面 Linux 打包。
+这是基于 [Mingle](https://github.com/earayu/Mingle) v${upstream.version} 的非官方 Linux 打包。
 它不是官方 Mingle 产品。
+桌面图形界面不在包内；官方网页控制台会保留。没有显示器时请使用 --no-open，再用浏览器打开给出的地址。
 
 可下载的压缩包包含 \`mingle-cli\` 可执行文件及其所需的 Node 运行时。
 \`.deb\` 会安装该可执行文件和一个 systemd 单元，不会自动 enable。

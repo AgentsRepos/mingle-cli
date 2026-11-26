@@ -146,7 +146,8 @@ async function writeBundleDocs(bundleDir, arch) {
       "",
       "The command is mingle-cli. Upstream's help text still says mingle.",
       "Data is stored in ~/.mingle (override with MINGLE_HOME).",
-      "The browser console and the desktop app are not included.",
+      "The official browser console is included. The desktop app is not.",
+      "Without a display, run ./mingle-cli start --no-open and open the printed URL in a browser.",
       "See NOTICE and payload/LICENSE.",
       "",
     ].join("\n"),
@@ -169,8 +170,9 @@ function bundleNotice(arch) {
     "The bundled Node.js binary is the one from the official archive. See runtime/LICENSE.",
     "",
     "Excluded from the official Linux archive: the mygo/WebKit desktop entry (mingle),",
-    "desktop launchers, icons, the browser console (core/dist/web), the X11 native addon,",
-    "source maps, and TypeScript declaration files.",
+    "desktop launchers, icons, WebKit libraries, and the X11 clipboard addon.",
+    "The official browser console (core/dist/web) is included.",
+    "Source maps and TypeScript declaration files are omitted.",
     "",
   ].join("\n");
 }
@@ -268,8 +270,10 @@ async function assertTree(dir, label) {
   });
   const node = path.join(dir, "runtime", "node");
   const main = path.join(dir, "payload", "dist", "cli", "main.js");
+  const consoleIndex = path.join(dir, "payload", "dist", "web", "index.html");
   if (!(await exists(node))) problems.push("missing runtime/node");
   if (!(await exists(main))) problems.push("missing payload/dist/cli/main.js");
+  if (!(await exists(consoleIndex))) problems.push("missing payload/dist/web/index.html");
   if (problems.length) {
     throw new Error(`${label} is not headless:\n${problems.slice(0, 20).join("\n")}`);
   }
@@ -289,12 +293,13 @@ async function assertDeb(debPath, arch) {
     "./usr/bin/mingle-cli",
     "./usr/lib/mingle-cli/runtime/node",
     "./usr/lib/mingle-cli/payload/dist/cli/main.js",
+    "./usr/lib/mingle-cli/payload/dist/web/index.html",
     "./usr/lib/systemd/system/mingle-cli@.service",
     "./usr/lib/systemd/user/mingle-cli.service",
   ]) {
     if (!text.includes(required)) throw new Error(`deb is missing ${required}`);
   }
-  for (const banned of ["mingle.desktop", "linux-platform-x11", "payload/dist/web/", "libwebkit"]) {
+  for (const banned of ["mingle.desktop", "linux-platform-x11", "libwebkit"]) {
     if (text.includes(banned)) throw new Error(`deb contains excluded path matching ${banned}`);
   }
 }
@@ -329,10 +334,13 @@ async function smoke(bundleDir, home, arch, { deb = false } = {}) {
   const started = runner.spawn(["start", "--no-open", "--port", port], env);
   try {
     await started.waitFor(/listening on http:\/\/127\.0\.0\.1:/, 90000);
-    const output = started.output();
+    const output = redactSecrets(started.output());
     assertHeadless(output, "start");
-    if (!output.includes("console not built")) {
-      throw new Error("start served the browser console; dist/web should be excluded");
+    if (/console not built/.test(output)) {
+      throw new Error("browser console was not included; payload/dist/web is required");
+    }
+    if (!/console: http:\/\/127\.0\.0\.1:\d+/.test(output)) {
+      throw new Error(`start did not report a console URL:\n${output}`);
     }
     const status = await runner.run(["status"], env);
     expectOk(status, "status");
@@ -365,6 +373,10 @@ function smokeEnv(home) {
   delete env.DISPLAY;
   delete env.WAYLAND_DISPLAY;
   return env;
+}
+
+function redactSecrets(text) {
+  return String(text).replace(/#token=\S+/g, "#token=[redacted]");
 }
 
 function assertHeadless(text, label) {
@@ -576,12 +588,12 @@ function spawnCollect(cmd, args, { env } = {}) {
           }
           if (child.exitCode != null || child.signalCode != null) {
             clearInterval(timer);
-            reject(new Error(`process exited before ${pattern}: ${output}`));
+            reject(new Error(`process exited before ${pattern}: ${redactSecrets(output)}`));
             return;
           }
           if (Date.now() - started > timeoutMs) {
             clearInterval(timer);
-            reject(new Error(`timed out waiting for ${pattern}: ${output}`));
+            reject(new Error(`timed out waiting for ${pattern}: ${redactSecrets(output)}`));
           }
         }, 200);
       });
