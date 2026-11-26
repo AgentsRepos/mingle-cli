@@ -66,7 +66,7 @@ curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install
 ### Debian 软件包
 
 ```sh
-sudo apt-get install ./mingle-cli_0.4.11-1_amd64.deb
+sudo apt-get install ./mingle-cli_0.4.11-2_amd64.deb
 mingle-cli --help
 mingle-cli --version
 ```
@@ -76,8 +76,8 @@ mingle-cli --version
 ### 独立压缩包
 
 ```sh
-tar -xzf mingle-cli-0.4.11-1-linux-amd64.tar.gz
-cd mingle-cli-0.4.11-1-linux-amd64
+tar -xzf mingle-cli-0.4.11-2-linux-amd64.tar.gz
+cd mingle-cli-0.4.11-2-linux-amd64
 ./mingle-cli --help
 ./mingle-cli --version
 ```
@@ -181,7 +181,7 @@ systemctl --user disable --now mingle-cli
 
 [earayu/Mingle](https://github.com/earayu/Mingle) 是上游项目。它的 Linux 发行物是一个桌面应用，里面同时带有这个 Node CLI。`mingle-cli` 包装的是已经发布的那个 CLI。它不 fork Mingle 的源代码，也不另写一套 agent 实现。
 
-构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。上游 `0.4.11` 的第一次打包版本是 `0.4.11-1`。
+构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。上游 `0.4.11` 的第一次打包版本是 `0.4.11-1`。当前打包修订号是 `0.4.11-2`。
 
 ## 仓库中不存放上游源代码
 
@@ -205,10 +205,10 @@ npm run build:all
 产物：
 
 ```text
-dist/mingle-cli-0.4.11-1-linux-amd64.tar.gz
-dist/mingle-cli_0.4.11-1_amd64.deb
-dist/mingle-cli-0.4.11-1-linux-arm64.tar.gz
-dist/mingle-cli_0.4.11-1_arm64.deb
+dist/mingle-cli-0.4.11-2-linux-amd64.tar.gz
+dist/mingle-cli_0.4.11-2_amd64.deb
+dist/mingle-cli-0.4.11-2-linux-arm64.tar.gz
+dist/mingle-cli_0.4.11-2_arm64.deb
 dist/SHA256SUMS
 ```
 
@@ -221,8 +221,8 @@ GitHub Actions 只有在该工作流已经位于默认分支、并且推送了�
 3. 在那个 `main` 提交上，为打包版本打标签（`upstreamVersion` + `-` + `packagingRevision`）：
 
    ```sh
-   git tag v0.4.11-1
-   git push origin v0.4.11-1
+   git tag v0.4.11-2
+   git push origin v0.4.11-2
    ```
 
 4. **Release** 工作流会构建 linux-amd64 和 linux-arm64，运行无界面冒烟测试，并为该标签创建 GitHub Release。它会上传两份压缩包、两个 `.deb` 和 `SHA256SUMS`。
