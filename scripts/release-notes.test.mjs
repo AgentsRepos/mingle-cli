@@ -40,4 +40,6 @@ test("release notes include Chinese text and the online installer", async () => 
   assert.match(stdout, new RegExp(`mingle-cli-${upstream.packagingVersion}-linux-amd64\\.tar\\.gz`));
   assert.match(stdout, /The unit is not enabled automatically/);
   assert.match(stdout, /不会自动 enable/);
+  assert.match(stdout, /mingle-cli-service/);
+  assert.match(stdout, /OAR_DSH_BIN/);
 });

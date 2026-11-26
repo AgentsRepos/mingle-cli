@@ -2,6 +2,9 @@
 # It runs as the account named by the instance, not as root:
 #   sudo systemctl enable --now mingle-cli@alice
 #   systemctl status mingle-cli@alice
+# ExecStart is `run`, as the User= account. It reads that account's HOME,
+# prepends tool directories that exist, may set OAR_DSH_BIN, then runs
+# mingle-cli start --no-open. A drop-in value of OAR_DSH_BIN is kept.
 [Unit]
 Description=Mingle headless CLI for %i (unofficial mingle-cli package)
 Documentation=https://github.com/AgentsRepos/mingle-cli
@@ -11,7 +14,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=%i
-ExecStart=/usr/bin/mingle-cli start --no-open
+ExecStart=/usr/bin/mingle-cli-service run
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=20

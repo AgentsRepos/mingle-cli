@@ -82,6 +82,8 @@ async function buildArch(arch) {
   await cp(common, bundleDir, { recursive: true });
   await copyFile(path.join(ROOT, "packaging", "mingle-cli.sh"), path.join(bundleDir, "mingle-cli"));
   await chmod(path.join(bundleDir, "mingle-cli"), 0o755);
+  await copyFile(path.join(ROOT, "packaging", "mingle-cli-service.sh"), path.join(bundleDir, "mingle-cli-service"));
+  await chmod(path.join(bundleDir, "mingle-cli-service"), 0o755);
   await writeBundleDocs(bundleDir, arch);
 
   const home = await mkdirTemp(`mingle-cli-smoke-${arch}-`);
@@ -143,8 +145,14 @@ async function writeBundleDocs(bundleDir, arch) {
       "  ./mingle-cli --help",
       "  ./mingle-cli --version",
       "  ./mingle-cli start --no-open",
+      "  ./mingle-cli-service env",
       "",
       "The command is mingle-cli. Upstream's help text still says mingle.",
+      "mingle-cli-service is a packaging helper. systemd ExecStart calls",
+      "mingle-cli-service run, which prepends common user tool paths, may set",
+      "OAR_DSH_BIN, then runs mingle-cli start --no-open.",
+      "mingle-cli-service start, stop, restart, and status control the user unit.",
+      "start and restart print the console URL, including #token=.",
       "Data is stored in ~/.mingle (override with MINGLE_HOME).",
       "The official browser console is included. The desktop app is not.",
       "Without a display, run ./mingle-cli start --no-open and open the printed URL in a browser.",
@@ -185,6 +193,8 @@ async function buildDeb(common, debPath, arch) {
   await cp(common, lib, { recursive: true });
   await copyFile(path.join(ROOT, "packaging", "mingle-cli.sh"), path.join(root, "usr", "bin", "mingle-cli"));
   await chmod(path.join(root, "usr", "bin", "mingle-cli"), 0o755);
+  await copyFile(path.join(ROOT, "packaging", "mingle-cli-service.sh"), path.join(root, "usr", "bin", "mingle-cli-service"));
+  await chmod(path.join(root, "usr", "bin", "mingle-cli-service"), 0o755);
 
   const debian = path.join(root, "DEBIAN");
   await mkdir(debian, { recursive: true });
@@ -291,6 +301,7 @@ async function assertDeb(debPath, arch) {
   const text = listing.stdout;
   for (const required of [
     "./usr/bin/mingle-cli",
+    "./usr/bin/mingle-cli-service",
     "./usr/lib/mingle-cli/runtime/node",
     "./usr/lib/mingle-cli/payload/dist/cli/main.js",
     "./usr/lib/mingle-cli/payload/dist/web/index.html",

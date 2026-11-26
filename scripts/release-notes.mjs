@@ -11,6 +11,7 @@ The desktop GUI is omitted. The official browser console is included; without a 
 
 The downloadable archive contains the \`mingle-cli\` executable and the Node runtime it needs.
 The .deb installs that executable and a systemd unit. The unit is not enabled automatically.
+The unit's ExecStart is \`mingle-cli-service run\`, which prepends common tool paths from the service user's home and sets \`OAR_DSH_BIN\` when \`dsh\` is found and that variable is unset. \`mingle-cli-service start\`, \`stop\`, \`restart\`, and \`status\` control the user unit. \`start\` and \`restart\` print the console URL, including \`#token=\`.
 
 ### Online install
 
@@ -55,6 +56,7 @@ Verify downloads with SHA256SUMS. Install and service instructions are in the re
 
 可下载的压缩包包含 \`mingle-cli\` 可执行文件及其所需的 Node 运行时。
 \`.deb\` 会安装该可执行文件和一个 systemd 单元，不会自动 enable。
+单元的 ExecStart 是 \`mingle-cli-service run\`。它会在服务用户的家目录下补上常见工具路径，并在 \`OAR_DSH_BIN\` 未设置且找到 \`dsh\` 时写入该变量。\`mingle-cli-service start\`、\`stop\`、\`restart\` 和 \`status\` 管理用户单元。\`start\` 和 \`restart\` 会打印带 \`#token=\` 的控制台 URL。
 
 ### 在线安装
 
