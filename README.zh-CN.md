@@ -43,7 +43,7 @@
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包同时安装 `/usr/bin/mingle-cli-service`。用户单元和系统单元调用 `mingle-cli-service run`。在你自己的会话里，`mingle-cli-service start`、`stop`、`restart` 和 `status` 管理用户单元。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。细节见 [systemd](#systemd)。
+在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包同时安装 `/usr/bin/mingle-cli-service`。用户单元和系统单元调用 `mingle-cli-service run`。在你自己的会话里，`mingle-cli-service start`、`stop`、`restart` 和 `status` 管理用户单元。`XDG_RUNTIME_DIR` 或 `DBUS_SESSION_BUS_ADDRESS` 为空时，只要 `/run/user/$(id -u)` 和其中的 `bus` 套接字存在，这几条命令会补上缺失的变量。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。细节见 [systemd](#systemd)。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -168,6 +168,10 @@ systemctl --user enable --now mingle-cli
 
 如果 `/run/user/$(id -u)` 还不存在，先执行 `sudo systemctl start user@$(id -u)`，或退出后重新 SSH 登录，再跑最后三行。
 
+`mingle-cli-service start`、`stop`、`restart` 和 `status` 会调用 `systemctl --user`。调用前，helper 会补上仍为空的两个变量。`XDG_RUNTIME_DIR` 为空且 `/run/user/$(id -u)` 存在时，把它设为这个目录。`DBUS_SESSION_BUS_ADDRESS` 为空且 `$XDG_RUNTIME_DIR/bus` 是套接字时，把它设为 `unix:path=$XDG_RUNTIME_DIR/bus`。已经设好的值保持不变。`run` 不改这两个变量，因为 systemd 给 `ExecStart` 的环境已经是对的。
+
+运行时目录不存在，或总线套接字不存在时，helper 会在调用 `systemctl` 之前停下，并说明要先执行 `sudo loginctl enable-linger "$USER"`。它也会说明不要用 root 跑 `systemctl --user`。helper 不会自己执行 `enable-linger`，也不会 enable 单元。`daemon-reload` 和 `enable` 仍要你自己执行，所以上面的 `export` 仍然是直接跑 `systemctl --user` 时连上总线的办法。
+
 ```sh
 systemctl --user status mingle-cli
 ```
@@ -203,7 +207,7 @@ Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/d
 
 加上这个文件之后，重新加载并重启你启用过的服务。
 
-在已经能使用 `systemctl --user` 的 shell 里（见上面的 `XDG_RUNTIME_DIR` 步骤），同一个 helper 管理用户单元：
+在你自己的用户 shell 里，包括这两个变量为空、但 `/run/user/$(id -u)` 和总线套接字已经存在的 SSH 会话，同一个 helper 管理用户单元。这四条命令不需要先做上面的 `export`：
 
 ```sh
 mingle-cli-service start
@@ -216,7 +220,7 @@ mingle-cli-service status
 
 这些命令不会 enable 单元。它们不会运行 `mingle open`，因此不需要显示器。URL 来自 `~/.mingle/runtime.json`；设置了 `MINGLE_HOME` 时则来自 `$MINGLE_HOME/runtime.json`。只有该端口已经接受连接时才会打印。服务也要使用这个目录时，请在 unit drop-in 里同样设置 `MINGLE_HOME`。
 
-`mingle-cli-service env` 打印当前进程里 `run` 会使用的 `PATH` 和 `OAR_DSH_BIN`。登录 shell 的 `PATH` 通常比服务更宽。要看服务眼里的环境：
+`mingle-cli-service env` 打印当前进程里 `run` 会使用的 `PATH` 和 `OAR_DSH_BIN`。`XDG_RUNTIME_DIR` 或 `DBUS_SESSION_BUS_ADDRESS` 已经设置，或者 helper 能从用户运行时目录补上它们时，也会把这两行打出来。`PATH` 和 `OAR_DSH_BIN` 的含义与上面相同。登录 shell 的 `PATH` 通常比服务更宽。要看服务眼里的环境：
 
 ```sh
 env -i HOME="$HOME" USER="$USER" \
