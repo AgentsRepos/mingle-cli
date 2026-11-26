@@ -257,7 +257,7 @@ systemctl --user disable --now mingle-cli
 
 [earayu/Mingle](https://github.com/earayu/Mingle) is the upstream project. Its Linux release is a desktop app that also carries this Node CLI. `mingle-cli` wraps that published CLI. It does not fork Mingle's source, and it does not add a separate implementation of the agent.
 
-The build pin lives in [`upstream.json`](upstream.json). `upstreamVersion` is the official release tag without the `v`. `packagingRevision` is this repository's package revision of that release. The first packaging of upstream `0.4.11` is version `0.4.11-1`. The current packaging revision is `0.4.11-4`. This revision brings pull request #14's user-bus environment fill into the packaging helper `mingle-cli-service`. Before `start`, `stop`, `restart`, and `status` call `systemctl --user`, the helper fills `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` when they are unset and the user manager is already running. It is not official Mingle.
+The build pin lives in [`upstream.json`](upstream.json). `upstreamVersion` is the official release tag without the `v`. `packagingRevision` is this repository's package revision of that release. The first packaging of upstream `0.4.11` is version `0.4.11-1`. The current packaging revision is `0.4.11-5`. This revision adds `mingle-cli-service daemon-reload` from pull request #16. The command uses the same user-bus path as `start`, `stop`, `restart`, and `status`: before `systemctl --user daemon-reload`, the helper fills `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` when they are unset and the user manager is already running. `daemon-reload` reloads unit files and does not start, stop, or enable the unit. `start`, `stop`, `restart`, and `status` still do not run `daemon-reload`. It is not official Mingle.
 
 ## No upstream source in this repository
 
@@ -281,10 +281,10 @@ With no `--arch`, the build targets the machine you are on. A successful build p
 Artifacts:
 
 ```text
-dist/mingle-cli-0.4.11-4-linux-amd64.tar.gz
-dist/mingle-cli_0.4.11-4_amd64.deb
-dist/mingle-cli-0.4.11-4-linux-arm64.tar.gz
-dist/mingle-cli_0.4.11-4_arm64.deb
+dist/mingle-cli-0.4.11-5-linux-amd64.tar.gz
+dist/mingle-cli_0.4.11-5_amd64.deb
+dist/mingle-cli-0.4.11-5-linux-arm64.tar.gz
+dist/mingle-cli_0.4.11-5_arm64.deb
 dist/SHA256SUMS
 ```
 
@@ -297,8 +297,8 @@ GitHub Actions publishes those artifacts only after this workflow is on the defa
 3. From that `main` commit, tag the packaging version (`upstreamVersion` + `-` + `packagingRevision`):
 
    ```sh
-   git tag v0.4.11-4
-   git push origin v0.4.11-4
+   git tag v0.4.11-5
+   git push origin v0.4.11-5
    ```
 
 4. The **Release** workflow builds linux-amd64 and linux-arm64, runs the headless smoke test, and creates a GitHub Release for that tag. It uploads both archives, both `.deb` packages, and `SHA256SUMS`.

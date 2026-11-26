@@ -42,8 +42,11 @@ test("release notes include Chinese text and the online installer", async () => 
   assert.match(stdout, /不会自动 enable/);
   assert.match(stdout, /mingle-cli-service/);
   assert.match(stdout, /OAR_DSH_BIN/);
-  assert.match(stdout, /pull request #14's user-bus environment fill/);
-  assert.match(stdout, /PR #14 的用户总线环境补齐/);
+  assert.match(stdout, /pull request #16/);
+  assert.match(stdout, /mingle-cli-service daemon-reload/);
+  assert.match(stdout, /PR #16/);
+  assert.match(stdout, /still do not run `daemon-reload`/);
+  assert.match(stdout, /仍然不会调用 `daemon-reload`/);
   assert.match(stdout, /XDG_RUNTIME_DIR/);
   assert.match(stdout, /DBUS_SESSION_BUS_ADDRESS/);
   assert.match(stdout, /#token=/);
