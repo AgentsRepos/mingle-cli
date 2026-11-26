@@ -1,6 +1,6 @@
 {
   "name": "mingle-cli",
-  "version": "0.4.11-1",
+  "version": "0.4.11-2",
   "private": true,
   "license": "MIT",
   "description": "Unofficial headless Linux packaging of the Mingle Node CLI. Not an official Mingle product.",
