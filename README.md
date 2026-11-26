@@ -61,12 +61,12 @@ To save this machine's packages and `SHA256SUMS` in the current directory withou
 
 ### Download a release asset
 
-Pick the asset that matches `dpkg --print-architecture` (`amd64` or `arm64`). The version below is an example from the current packaging revision; use the version attached to the GitHub Release you download.
+Pick the asset that matches `dpkg --print-architecture` (`amd64` or `arm64`). Replace `<version>` with the packaging version in the filename you downloaded. These commands are not pinned to one revision. The one-line installer above follows the latest stable release.
 
 ### Debian package
 
 ```sh
-sudo apt-get install ./mingle-cli_0.4.11-2_amd64.deb
+sudo apt-get install ./mingle-cli_<version>_amd64.deb
 mingle-cli --help
 mingle-cli --version
 ```
@@ -76,8 +76,8 @@ mingle-cli --version
 ### Standalone archive
 
 ```sh
-tar -xzf mingle-cli-0.4.11-2-linux-amd64.tar.gz
-cd mingle-cli-0.4.11-2-linux-amd64
+tar -xzf mingle-cli-<version>-linux-amd64.tar.gz
+cd mingle-cli-<version>-linux-amd64
 ./mingle-cli --help
 ./mingle-cli --version
 ```
@@ -244,7 +244,7 @@ systemctl --user disable --now mingle-cli
 
 [earayu/Mingle](https://github.com/earayu/Mingle) is the upstream project. Its Linux release is a desktop app that also carries this Node CLI. `mingle-cli` wraps that published CLI. It does not fork Mingle's source, and it does not add a separate implementation of the agent.
 
-The build pin lives in [`upstream.json`](upstream.json). `upstreamVersion` is the official release tag without the `v`. `packagingRevision` is this repository's package revision of that release. The first packaging of upstream `0.4.11` is version `0.4.11-1`. The current packaging revision is `0.4.11-2`.
+The build pin lives in [`upstream.json`](upstream.json). `upstreamVersion` is the official release tag without the `v`. `packagingRevision` is this repository's package revision of that release. The first packaging of upstream `0.4.11` is version `0.4.11-1`. The current packaging revision is `0.4.11-3`. This revision ships `mingle-cli-service` with the package. The helper prepends `PATH` and discovers `dsh`, and it proxies the user unit's `start`, `stop`, `restart`, and `status`. `start` and `restart` print the console URL, including `#token=`. It is not official Mingle.
 
 ## No upstream source in this repository
 
@@ -268,10 +268,10 @@ With no `--arch`, the build targets the machine you are on. A successful build p
 Artifacts:
 
 ```text
-dist/mingle-cli-0.4.11-2-linux-amd64.tar.gz
-dist/mingle-cli_0.4.11-2_amd64.deb
-dist/mingle-cli-0.4.11-2-linux-arm64.tar.gz
-dist/mingle-cli_0.4.11-2_arm64.deb
+dist/mingle-cli-0.4.11-3-linux-amd64.tar.gz
+dist/mingle-cli_0.4.11-3_amd64.deb
+dist/mingle-cli-0.4.11-3-linux-arm64.tar.gz
+dist/mingle-cli_0.4.11-3_arm64.deb
 dist/SHA256SUMS
 ```
 
@@ -284,8 +284,8 @@ GitHub Actions publishes those artifacts only after this workflow is on the defa
 3. From that `main` commit, tag the packaging version (`upstreamVersion` + `-` + `packagingRevision`):
 
    ```sh
-   git tag v0.4.11-2
-   git push origin v0.4.11-2
+   git tag v0.4.11-3
+   git push origin v0.4.11-3
    ```
 
 4. The **Release** workflow builds linux-amd64 and linux-arm64, runs the headless smoke test, and creates a GitHub Release for that tag. It uploads both archives, both `.deb` packages, and `SHA256SUMS`.

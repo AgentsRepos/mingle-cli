@@ -42,4 +42,9 @@ test("release notes include Chinese text and the online installer", async () => 
   assert.match(stdout, /不会自动 enable/);
   assert.match(stdout, /mingle-cli-service/);
   assert.match(stdout, /OAR_DSH_BIN/);
+  assert.match(stdout, /This revision ships `mingle-cli-service`/);
+  assert.match(stdout, /本修订随包装发布 `mingle-cli-service`/);
+  assert.match(stdout, /#token=/);
+  assert.match(stdout, /not an official Mingle command/);
+  assert.match(stdout, /不是官方 Mingle 的命令/);
 });

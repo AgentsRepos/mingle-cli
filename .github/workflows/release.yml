@@ -1,7 +1,7 @@
 name: Release
 
 # Pushing a tag publishes GitHub Release assets. The tag must be the
-# packaging version from upstream.json, for example v0.4.11-2.
+# packaging version from upstream.json, for example v0.4.11-3.
 # workflow_dispatch builds the same artifacts and does not publish.
 on:
   push:
