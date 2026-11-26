@@ -140,18 +140,36 @@ echo "$TELEGRAM_BOT_TOKEN" | mingle-cli connect alex telegram
 
 `.deb` 会装上单元文件，但不会启用，也不会启动。在你明确启用之前，它不会接管整台机器。
 
-用你自己的用户身份运行。这样服务和你在 shell 里执行的 `mingle-cli` 会共用 `~/.mingle`：
+用你自己的用户身份运行。这样服务和你在 shell 里执行的 `mingle-cli` 会共用 `~/.mingle`。`systemctl --user` 连接的是这个用户的会话总线。不要用 root 跑 `systemctl --user`：root 的 shell 没有该账号的会话总线。
 
-```sh
-systemctl --user daemon-reload
-systemctl --user enable --now mingle-cli
-systemctl --user status mingle-cli
+shell 需要已设置 `$XDG_RUNTIME_DIR` 和 `$DBUS_SESSION_BUS_ADDRESS`。完整的登录会话会带上这两个变量。SSH 没有走完整登录会话，或者用 `su` / `sudo` 切到了另一个用户时，它们没有设置。这时执行 `systemctl --user daemon-reload` 会失败：
+
+```
+Failed to connect to user scope bus via local transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined (consider using --machine=<user>@.host --user to connect to bus of other user)
 ```
 
-用户服务会在注销时停止。若希望注销后仍然运行：
+这是当前 shell 没有连上用户会话，不是 Debian 13 的 `systemctl` 机制故障。
+
+用户服务会在注销时停止。linger 会让这个用户的服务管理器在注销后继续运行。`loginctl enable-linger` 需要 root。不加 `sudo` 时，logind 会试图通过 `/usr/bin/pkttyagent` 询问密码，而精简的 Debian 安装往往没有这个程序：
+
+```
+Failed to execute /usr/bin/pkttyagent: 没有那个文件或目录
+Could not enable linger: Access denied
+```
+
+在 Debian 13 上通过 SSH 使用时，下面一组命令可用：
 
 ```sh
 sudo loginctl enable-linger "$USER"
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+systemctl --user daemon-reload
+systemctl --user enable --now mingle-cli
+```
+
+如果 `/run/user/$(id -u)` 还不存在，先执行 `sudo systemctl start user@$(id -u)`，或退出后重新 SSH 登录，再跑最后三行。
+
+```sh
+systemctl --user status mingle-cli
 ```
 
 若要作为系统服务、以某个已有账号运行（不是 root）：

@@ -140,18 +140,36 @@ Upstream documents the product at <https://github.com/earayu/Mingle> and <https:
 
 The `.deb` installs unit files and does not enable or start them. Nothing is taken over system-wide until you opt in.
 
-Run it as your own user. The service and a shell `mingle-cli` then share `~/.mingle`:
+Run it as your own user. The service and a shell `mingle-cli` then share `~/.mingle`. `systemctl --user` talks to that user's session bus. Do not run `systemctl --user` as root: a root shell has no session bus for the account.
 
-```sh
-systemctl --user daemon-reload
-systemctl --user enable --now mingle-cli
-systemctl --user status mingle-cli
+The shell needs `$XDG_RUNTIME_DIR` and `$DBUS_SESSION_BUS_ADDRESS`. A full login sets both. They stay unset when SSH did not open a full login session, or when the shell was switched to another user with `su` or `sudo`. `systemctl --user daemon-reload` then fails:
+
+```
+Failed to connect to user scope bus via local transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined (consider using --machine=<user>@.host --user to connect to bus of other user)
 ```
 
-User services stop at logout. To keep the process after you log out:
+The current shell is not connected to the user session. This is not a Debian 13 `systemctl` failure.
+
+User services stop at logout. Linger keeps this user's service manager running after logout. `loginctl enable-linger` needs root. Without `sudo`, logind tries to ask for a password through `/usr/bin/pkttyagent`, and a minimal Debian install often does not include that program:
+
+```
+Failed to execute /usr/bin/pkttyagent: 没有那个文件或目录
+Could not enable linger: Access denied
+```
+
+This sequence works on Debian 13 over SSH:
 
 ```sh
 sudo loginctl enable-linger "$USER"
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+systemctl --user daemon-reload
+systemctl --user enable --now mingle-cli
+```
+
+If `/run/user/$(id -u)` does not exist yet, run `sudo systemctl start user@$(id -u)` first, or log out and SSH in again, then run the last three lines.
+
+```sh
+systemctl --user status mingle-cli
 ```
 
 To run it as a system service for an existing account (not as root):
