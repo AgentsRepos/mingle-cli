@@ -9,6 +9,11 @@
 #   restart  systemctl --user restart, then print the new console URL
 #   status   systemctl --user status, plus the console URL when it is up
 #
+# start、stop、restart、status 在调用 systemctl --user 之前补齐空的
+# XDG_RUNTIME_DIR 与 DBUS_SESSION_BUS_ADDRESS。已经设置的值不覆盖。
+# 运行时目录或总线套接字不存在时只打印说明并退出，不执行 enable-linger，
+# 也不 enable 单元。run 不改这两个变量：systemd 的 ExecStart 已带上环境。
+#
 # start leaves an already running user unit alone. restart waits until the
 # new process is listening and its admin token differs from the previous one.
 # The URL is read from $MINGLE_HOME/runtime.json, or ~/.mingle/runtime.json.
@@ -34,6 +39,15 @@ upstream Mingle command, and it does not enable the unit.
   status    show the user unit status and, when listening, the console URL
   -h, --help
             show this help
+
+start, stop, restart, and status call systemctl --user. If XDG_RUNTIME_DIR
+is unset or empty and /run/user/<uid> exists, it is set to that directory.
+If DBUS_SESSION_BUS_ADDRESS is unset or empty and $XDG_RUNTIME_DIR/bus is a
+socket, it is set to unix:path=$XDG_RUNTIME_DIR/bus. Values that are already
+set are kept. If the runtime directory or bus socket is missing, the
+command stops and tells you to run: sudo loginctl enable-linger "$USER"
+Do not run systemctl --user as root. The helper does not run enable-linger
+and does not enable the unit. run does not change those two variables.
 EOF
 }
 
@@ -204,11 +218,77 @@ EOF
   esac
 }
 
+# 测试把 MINGLE_CLI_SERVICE_RUNTIME_DIR 设成绝对路径，用来代替 /run/user/UID。
+# 这不是用户配置。相对路径一律忽略。
+user_runtime_candidate() {
+  case ${MINGLE_CLI_SERVICE_RUNTIME_DIR:-} in
+    /*)
+      printf '%s\n' "$MINGLE_CLI_SERVICE_RUNTIME_DIR"
+      ;;
+    *)
+      printf '%s\n' "/run/user/$(id -u)"
+      ;;
+  esac
+}
+
+# 只补空白变量。两枚变量都有值时返回 0，否则返回 1。这里不打印错误。
+apply_user_bus() {
+  bus_candidate=$(user_runtime_candidate)
+  if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -d "$bus_candidate" ]; then
+    XDG_RUNTIME_DIR=$bus_candidate
+    export XDG_RUNTIME_DIR
+  fi
+  bus_runtime=${XDG_RUNTIME_DIR:-}
+  if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -n "$bus_runtime" ] && [ -S "${bus_runtime}/bus" ]; then
+    DBUS_SESSION_BUS_ADDRESS=unix:path=$bus_runtime/bus
+    export DBUS_SESSION_BUS_ADDRESS
+  fi
+  [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]
+}
+
+# systemctl --user 专用。run 不调用。root 直接拒绝；目录或套接字不可用时说明下一步。
+require_user_bus() {
+  bus_uid=$(id -u)
+  if [ "$bus_uid" -eq 0 ]; then
+    cat >&2 <<'EOF'
+mingle-cli-service: do not run systemctl --user as root.
+A root shell has no session bus for the account that owns the user unit.
+Run mingle-cli-service as that user. To keep that user's services after logout:
+
+  sudo loginctl enable-linger "$USER"
+
+This helper does not run enable-linger, and it does not enable the unit.
+EOF
+    return 1
+  fi
+  if apply_user_bus; then
+    return 0
+  fi
+  bus_candidate=$(user_runtime_candidate)
+  bus_runtime=${XDG_RUNTIME_DIR:-$bus_candidate}
+  cat >&2 <<EOF
+mingle-cli-service: cannot connect to the user service bus from this shell.
+systemctl --user needs XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS.
+XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-<unset>}
+DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}
+The runtime directory checked was ${bus_candidate}. The bus socket checked was ${bus_runtime}/bus.
+Do not run systemctl --user as root. A root shell has no session bus for your account.
+Enable linger for your user, then start the user manager if the directory is still missing:
+
+  sudo loginctl enable-linger "\$USER"
+  sudo systemctl start user@${bus_uid}
+
+This helper does not run those commands, and it does not enable the mingle-cli unit.
+EOF
+  return 1
+}
+
 user_systemctl() {
   command -v systemctl >/dev/null 2>&1 || {
     echo "mingle-cli-service: systemctl not found" >&2
     exit 127
   }
+  require_user_bus || exit 1
   SYSTEMD_PAGER=cat systemctl --user "$@"
 }
 
@@ -390,8 +470,16 @@ main() {
     env)
       require_no_args "$@"
       prepare_service_env
+      # 能补上就打印。目录或套接字不存在时仍只报告 PATH 与 OAR_DSH_BIN。
+      apply_user_bus || true
       printf 'PATH=%s\n' "$PATH"
       printf 'OAR_DSH_BIN=%s\n' "${OAR_DSH_BIN:-}"
+      if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+        printf 'XDG_RUNTIME_DIR=%s\n' "$XDG_RUNTIME_DIR"
+      fi
+      if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+        printf 'DBUS_SESSION_BUS_ADDRESS=%s\n' "$DBUS_SESSION_BUS_ADDRESS"
+      fi
       ;;
     run)
       shift

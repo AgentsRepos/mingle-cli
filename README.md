@@ -43,7 +43,7 @@ The script looks in the current directory first. `curl | sh` uses the directory 
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package also installs `/usr/bin/mingle-cli-service`. User and system units call `mingle-cli-service run`. From your own session, `mingle-cli-service start`, `stop`, `restart`, and `status` control the user unit. The package's postinst reloads systemd and does not enable or start the service. Details are in [systemd](#systemd).
+On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package also installs `/usr/bin/mingle-cli-service`. User and system units call `mingle-cli-service run`. From your own session, `mingle-cli-service start`, `stop`, `restart`, and `status` control the user unit. When `XDG_RUNTIME_DIR` or `DBUS_SESSION_BUS_ADDRESS` is empty, those commands fill the missing value from `/run/user/$(id -u)` if that directory and its `bus` socket exist. The package's postinst reloads systemd and does not enable or start the service. Details are in [systemd](#systemd).
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -168,6 +168,10 @@ systemctl --user enable --now mingle-cli
 
 If `/run/user/$(id -u)` does not exist yet, run `sudo systemctl start user@$(id -u)` first, or log out and SSH in again, then run the last three lines.
 
+`mingle-cli-service start`, `stop`, `restart`, and `status` call `systemctl --user`. Before that call, the helper fills the two variables when they are empty. If `XDG_RUNTIME_DIR` is empty and `/run/user/$(id -u)` exists, the helper sets it to that path. If `DBUS_SESSION_BUS_ADDRESS` is empty and `$XDG_RUNTIME_DIR/bus` is a socket, the helper sets it to `unix:path=$XDG_RUNTIME_DIR/bus`. A value that is already set stays as it is. `run` leaves both variables alone. systemd already provides them to `ExecStart`.
+
+When that directory is missing, or the bus socket is missing, the helper stops before `systemctl` and tells you to run `sudo loginctl enable-linger "$USER"`. It also tells you not to run `systemctl --user` as root. The helper does not run `enable-linger`, and it does not enable the unit. `daemon-reload` and `enable` are still commands you run yourself, so the `export` above is still how a raw `systemctl --user` reaches the bus.
+
 ```sh
 systemctl --user status mingle-cli
 ```
@@ -203,7 +207,7 @@ Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/d
 
 Reload and restart the service you enabled after adding that file.
 
-From a shell that can already reach `systemctl --user` (the `XDG_RUNTIME_DIR` steps above), the same helper controls the user unit:
+From your own user shell, including an SSH session where those two variables are empty but `/run/user/$(id -u)` and the bus socket already exist, the same helper controls the user unit. These four commands do not need the `export` above:
 
 ```sh
 mingle-cli-service start
@@ -216,7 +220,7 @@ mingle-cli-service status
 
 These commands do not enable the unit. They do not run `mingle open`, and they do not need a display. The URL is taken from `~/.mingle/runtime.json`, or from `$MINGLE_HOME/runtime.json` when `MINGLE_HOME` is set. It is printed only after that port accepts a connection. Set `MINGLE_HOME` in a unit drop-in as well when the service should use the same directory.
 
-`mingle-cli-service env` prints the `PATH` and `OAR_DSH_BIN` that `run` would use in the current process. A login shell usually has a broader `PATH` than a service. To see the service view:
+`mingle-cli-service env` prints the `PATH` and `OAR_DSH_BIN` that `run` would use in the current process. When `XDG_RUNTIME_DIR` or `DBUS_SESSION_BUS_ADDRESS` is already set, or when the helper can fill them from the user runtime directory, those lines are printed too. `PATH` and `OAR_DSH_BIN` keep the meaning above. A login shell usually has a broader `PATH` than a service. To see the service view:
 
 ```sh
 env -i HOME="$HOME" USER="$USER" \
