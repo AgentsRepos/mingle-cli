@@ -35,7 +35,7 @@ Both **linux-amd64** and **linux-arm64** are built. Each release contains:
 
 ### One-line install
 
-Linux amd64 and arm64 only. [`install.sh`](install.sh) asks the GitHub API for this repository's latest stable release, checks the download against that release's `SHA256SUMS`, and installs it. It does not enable or start systemd. The script is not pinned to v0.4.11-1; a newer stable release is picked up automatically. Other operating systems and CPU architectures stop with an error.
+Linux amd64 and arm64 only. [`install.sh`](install.sh) asks the GitHub API for this repository's latest stable release, checks the download against that release's `SHA256SUMS`, and installs it. It does not enable or start systemd. The script is not pinned to a packaging revision; it installs whichever stable release is current. Other operating systems and CPU architectures stop with an error.
 
 The script looks in the current directory first. `curl | sh` uses the directory where you run it, and `./install.sh` uses that same directory. If `SHA256SUMS` and the matching package are already there and the checksum matches, those local files are installed and not downloaded again.
 
@@ -43,7 +43,7 @@ The script looks in the current directory first. `curl | sh` uses the directory 
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-On Debian or Ubuntu, run it as root. v0.4.11-1's `SHA256SUMS` lists the `.tar.gz` archives and both `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package's postinst reloads systemd and does not enable or start the service.
+On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package's postinst reloads systemd and does not enable or start the service.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
