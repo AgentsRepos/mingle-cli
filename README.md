@@ -95,6 +95,28 @@ sha256sum -c SHA256SUMS
 
 The program listens on `127.0.0.1` only. Data is stored in `~/.mingle`. Set `MINGLE_HOME` to use a different directory. The command reference, taken from this package's `mingle-cli --help` and the usage lines the CLI prints, is in [docs/cli.md](docs/cli.md).
 
+### Reach it from another machine
+
+Official Mingle v0.4.11 binds the API to `127.0.0.1`. `mingle-cli start` only accepts `--port` and `--no-open`. There is no `--host` flag and no option to bind `0.0.0.0`. This packaging does not change that upstream behavior and does not require a new release for it.
+
+`mingle-cli` already occupies `127.0.0.1:7419`, so do not bind a forwarder to port `7419` on the same machine. `0.0.0.0:7419` conflicts with that listener. Install `socat`, then on the machine that runs Mingle use a different public port:
+
+```sh
+socat TCP-LISTEN:7420,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:7419
+```
+
+From another machine, open `http://<this machine's address>:7420`.
+
+That publishes the local API on the network. Use it only on a trusted network, and limit the port with a firewall.
+
+SSH local forwarding keeps the API off the LAN. On the other machine:
+
+```sh
+ssh -N -L 7419:127.0.0.1:7419 user@mingle-host
+```
+
+Then open `http://127.0.0.1:7419` on that machine.
+
 ```sh
 mingle-cli --help
 mingle-cli --version
