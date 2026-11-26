@@ -35,7 +35,7 @@
 
 ### 一行安装
 
-只支持 Linux amd64 和 arm64。[`install.sh`](install.sh) 会通过 GitHub API 读取本仓库最新的正式 Release，用该 Release 里的 `SHA256SUMS` 校验下载，然后安装。它不会启用或启动 systemd。脚本不写死 v0.4.11-1，以后的正式版会自动用上。其他操作系统或 CPU 架构会直接报错退出。
+只支持 Linux amd64 和 arm64。[`install.sh`](install.sh) 会通过 GitHub API 读取本仓库最新的正式 Release，用该 Release 里的 `SHA256SUMS` 校验下载，然后安装。它不会启用或启动 systemd。脚本不写死某一个打包修订号，装的就是当前最新正式版。其他操作系统或 CPU 架构会直接报错退出。
 
 脚本会先看当前目录。`curl | sh` 用的是你执行命令时的目录，直接运行 `./install.sh` 也是这个目录。如果这里已经有匹配该 Release 的 `SHA256SUMS` 和安装包，并且校验通过，就直接用这些本地文件，不再从 GitHub 下载。
 
@@ -43,7 +43,7 @@
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-在 Debian 或 Ubuntu 上用 root 运行。v0.4.11-1 的 `SHA256SUMS` 已经包含两个 `.tar.gz` 和两个 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。
+在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
