@@ -43,7 +43,7 @@
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包同时安装 `/usr/bin/mingle-cli-service`。用户单元和系统单元调用 `mingle-cli-service run`。在你自己的会话里，`mingle-cli-service start`、`stop`、`restart` 和 `status` 管理用户单元。`XDG_RUNTIME_DIR` 或 `DBUS_SESSION_BUS_ADDRESS` 为空时，只要 `/run/user/$(id -u)` 和其中的 `bus` 套接字存在，这几条命令会补上缺失的变量。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。细节见 [systemd](#systemd)。
+在 Debian 或 Ubuntu 上用 root 运行。最新正式版的 `SHA256SUMS` 包含 `.tar.gz` 和 `.deb`，所以上面这条 `sudo` 命令会用 `dpkg` 安装 `.deb`，命令是 `mingle-cli`。软件包同时安装 `/usr/bin/mingle-cli-service`。用户单元和系统单元调用 `mingle-cli-service run`。在你自己的会话里，`mingle-cli-service start`、`stop`、`restart`、`status` 和 `daemon-reload` 管理用户单元。`XDG_RUNTIME_DIR` 或 `DBUS_SESSION_BUS_ADDRESS` 为空时，只要 `/run/user/$(id -u)` 和其中的 `bus` 套接字存在，这几条命令会补上缺失的变量。软件包的 postinst 只会重新加载 systemd，不会启用或启动服务。细节见 [systemd](#systemd)。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -168,9 +168,11 @@ systemctl --user enable --now mingle-cli
 
 如果 `/run/user/$(id -u)` 还不存在，先执行 `sudo systemctl start user@$(id -u)`，或退出后重新 SSH 登录，再跑最后三行。
 
-`mingle-cli-service start`、`stop`、`restart` 和 `status` 会调用 `systemctl --user`。调用前，helper 会补上仍为空的两个变量。`XDG_RUNTIME_DIR` 为空且 `/run/user/$(id -u)` 存在时，把它设为这个目录。`DBUS_SESSION_BUS_ADDRESS` 为空且 `$XDG_RUNTIME_DIR/bus` 是套接字时，把它设为 `unix:path=$XDG_RUNTIME_DIR/bus`。已经设好的值保持不变。`run` 不改这两个变量，因为 systemd 给 `ExecStart` 的环境已经是对的。
+安装了 `mingle-cli-service` 之后，`mingle-cli-service daemon-reload` 会自己补齐用户总线并重新加载用户管理器。上面的 `export` 仍然是直接跑 `systemctl --user` 时连上总线的办法，包括 `systemctl --user enable`。
 
-运行时目录不存在，或总线套接字不存在时，helper 会在调用 `systemctl` 之前停下，并说明要先执行 `sudo loginctl enable-linger "$USER"`。它也会说明不要用 root 跑 `systemctl --user`。helper 不会自己执行 `enable-linger`，也不会 enable 单元。`daemon-reload` 和 `enable` 仍要你自己执行，所以上面的 `export` 仍然是直接跑 `systemctl --user` 时连上总线的办法。
+`mingle-cli-service start`、`stop`、`restart`、`status` 和 `daemon-reload` 会调用 `systemctl --user`。调用前，helper 会补上仍为空的两个变量。`XDG_RUNTIME_DIR` 为空且 `/run/user/$(id -u)` 存在时，把它设为这个目录。`DBUS_SESSION_BUS_ADDRESS` 为空且 `$XDG_RUNTIME_DIR/bus` 是套接字时，把它设为 `unix:path=$XDG_RUNTIME_DIR/bus`。已经设好的值保持不变。`run` 不改这两个变量，因为 systemd 给 `ExecStart` 的环境已经是对的。`start`、`stop`、`restart` 和 `status` 不会调用 `daemon-reload`。
+
+运行时目录不存在，或总线套接字不存在时，helper 会在调用 `systemctl` 之前停下，并说明要先执行 `sudo loginctl enable-linger "$USER"`。目录仍然不在时，它还会说明再执行 `sudo systemctl start user@$(id -u)`。它也会说明不要用 root 跑 `systemctl --user`。helper 不会自己执行 `enable-linger`，也不会 enable 单元。`enable` 仍要你自己执行。
 
 ```sh
 systemctl --user status mingle-cli
@@ -205,18 +207,19 @@ Mingle 在 `PATH` 里找到 `dsh`，或者 `OAR_DSH_BIN` 指向它时，会把 D
 Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/dsh
 ```
 
-加上这个文件之后，重新加载并重启你启用过的服务。
+加上这个文件之后，先重新加载拥有该单元的管理器，再重启服务。用户单元执行 `mingle-cli-service daemon-reload`，然后 `mingle-cli-service restart`。系统模板执行 `sudo systemctl daemon-reload`，然后 `sudo systemctl restart mingle-cli@alice`。
 
-在你自己的用户 shell 里，包括这两个变量为空、但 `/run/user/$(id -u)` 和总线套接字已经存在的 SSH 会话，同一个 helper 管理用户单元。这四条命令不需要先做上面的 `export`：
+在你自己的用户 shell 里，包括这两个变量为空、但 `/run/user/$(id -u)` 和总线套接字已经存在的 SSH 会话，同一个 helper 管理用户单元。下面这些命令不需要先做上面的 `export`：
 
 ```sh
+mingle-cli-service daemon-reload
 mingle-cli-service start
 mingle-cli-service stop
 mingle-cli-service restart
 mingle-cli-service status
 ```
 
-`start` 会启动用户单元。单元已经在跑时，它不会重启那个进程。它会等到进程开始听端口，然后在当前终端打印带 `#token=` 的控制台 URL。如果启动前就已经在跑，打印的是当前这条 URL。`restart` 会重启单元，等到新进程开始听端口后，打印新的 URL。这一行里的 token 是新进程生成的。`stop` 停止用户单元。`status` 显示 `systemctl --user status`；控制台已经在听端口时，同样带上这条 URL。
+`daemon-reload` 执行 `systemctl --user daemon-reload`，让用户管理器重新读取磁盘上改过的单元文件。它不会启动、停止或 enable 单元。`start` 会启动用户单元。单元已经在跑时，它不会重启那个进程。它会等到进程开始听端口，然后在当前终端打印带 `#token=` 的控制台 URL。如果启动前就已经在跑，打印的是当前这条 URL。`restart` 会重启单元，等到新进程开始听端口后，打印新的 URL。这一行里的 token 是新进程生成的。`stop` 停止用户单元。`status` 显示 `systemctl --user status`；控制台已经在听端口时，同样带上这条 URL。`start`、`stop`、`restart` 和 `status` 不会改动已经加载的单元定义。
 
 这些命令不会 enable 单元。它们不会运行 `mingle open`，因此不需要显示器。URL 来自 `~/.mingle/runtime.json`；设置了 `MINGLE_HOME` 时则来自 `$MINGLE_HOME/runtime.json`。只有该端口已经接受连接时才会打印。服务也要使用这个目录时，请在 unit drop-in 里同样设置 `MINGLE_HOME`。
 
@@ -230,13 +233,19 @@ env -i HOME="$HOME" USER="$USER" \
 
 系统模板仍用 `sudo systemctl` 管理，例如 `sudo systemctl restart mingle-cli@alice`。`mingle-cli-service start` 只作用于用户单元。
 
-软件包升级之后，重启你启用过的服务，它才会用上新文件。对用户单元，这条命令同时打印新的控制台 URL：
+软件包升级之后，磁盘上的用户单元文件可能和用户管理器已经加载的副本不一致。`mingle-cli-service restart` 会重启进程并打印新的控制台 URL。重新加载改过的单元文件是单独一步，`restart` 不会做这件事。先执行 `daemon-reload`，再 `restart`。用户单元当前是停止的，则在 `daemon-reload` 之后用 `start`：
 
 ```sh
+mingle-cli-service daemon-reload
 mingle-cli-service restart
-# 系统模板则用：
-sudo systemctl restart mingle-cli@alice
 ```
+
+```sh
+mingle-cli-service daemon-reload
+mingle-cli-service start
+```
+
+软件包的 postinst 会对系统管理器执行 `systemctl daemon-reload`。已经启用的系统实例用 `sudo systemctl restart mingle-cli@alice` 重启。`mingle-cli-service daemon-reload` 只作用于用户管理器，不会 enable 单元。
 
 卸载软件包时会停止系统模板实例。用户实例需要你自己先停掉：
 

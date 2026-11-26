@@ -4,10 +4,12 @@
 # Keep it running with no graphical session:
 #   sudo loginctl enable-linger "$USER"
 # From a user shell (this does not enable the unit):
+#   mingle-cli-service daemon-reload
 #   mingle-cli-service start|stop|restart|status
-# 这四条命令在调用 systemctl --user 前，会补齐空的 XDG_RUNTIME_DIR
+# daemon-reload reloads unit files. start, stop, restart, and status do not.
+# 这些命令在调用 systemctl --user 前，会补齐空的 XDG_RUNTIME_DIR
 # 和 DBUS_SESSION_BUS_ADDRESS（/run/user/UID 下的 bus 套接字存在时）。
-# 它们不执行 enable-linger。run 不改这两个变量。
+# 它们不执行 enable-linger，也不会自动 enable 单元。run 不改这两个变量。
 # ExecStart is `run`: it reads this user's HOME, prepends tool directories
 # that exist, may set OAR_DSH_BIN, then runs mingle-cli start --no-open.
 # A drop-in value of OAR_DSH_BIN is kept.

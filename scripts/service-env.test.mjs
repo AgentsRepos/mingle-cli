@@ -57,7 +57,7 @@ printf 'env DBUS=%s\\n' "\${DBUS_SESSION_BUS_ADDRESS-}" >> "$STATE/log"
 cmd=
 for arg in "$@"; do
   case "$arg" in
-    start|stop|restart|status|is-active) cmd=$arg ;;
+    start|stop|restart|status|is-active|daemon-reload) cmd=$arg ;;
   esac
 done
 case "$cmd" in
@@ -83,6 +83,8 @@ case "$cmd" in
     fi
     printf '%s\\n' inactive
     exit 3
+    ;;
+  daemon-reload)
     ;;
   *)
     printf 'unexpected systemctl %s\\n' "$*" >&2
@@ -239,6 +241,7 @@ test("start prints the console URL and does not restart a running user unit", as
     const log = await readFile(path.join(state, "log"), "utf8");
     assert.match(log, /^--user start mingle-cli$/m);
     assert.equal(log.includes("restart"), false);
+    assert.equal(log.includes("daemon-reload"), false);
     assert.equal(log.includes(`env XDG=${path.join(root, "preset-xdg")}`), true);
     assert.equal(log.includes("env DBUS=unix:path=/preset/bus"), true);
   } finally {
@@ -319,6 +322,7 @@ exit 0
     assert.equal(`${result.stdout}${result.stderr}`.includes("tokOLD"), false);
     const log = await readFile(path.join(state, "log"), "utf8");
     assert.match(log, /^--user restart mingle-cli$/m);
+    assert.equal(log.includes("daemon-reload"), false);
   } finally {
     await closeAll(servers);
     await rm(root, { recursive: true, force: true });
@@ -340,6 +344,7 @@ test("stop stops the user unit without printing a console URL", async () => {
     assert.equal(result.stdout.includes("console:"), false);
     const log = await readFile(path.join(state, "log"), "utf8");
     assert.match(log, /^--user stop mingle-cli$/m);
+    assert.equal(log.includes("daemon-reload"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -369,6 +374,8 @@ test("status includes the console URL only while the user unit is active", async
     assert.equal(running.status, 0, running.stderr);
     assert.match(running.stdout, /active \(running\)/);
     assert.match(running.stdout, new RegExp(`console: http://127\\.0\\.0\\.1:${current.port}/#token=tokSTATUS`));
+    const log = await readFile(path.join(state, "log"), "utf8");
+    assert.equal(log.includes("daemon-reload"), false);
   } finally {
     await closeAll(servers);
     await rm(root, { recursive: true, force: true });
@@ -378,9 +385,11 @@ test("status includes the console URL only while the user unit is active", async
 test("help lists the user-unit commands and rejects unknown commands", () => {
   const help = run(["--help"], { PATH: "/usr/bin:/bin", LANG: "C" });
   assert.equal(help.status, 0, help.stderr);
-  for (const word of ["run", "env", "start", "stop", "restart", "status"]) {
+  for (const word of ["run", "env", "start", "stop", "restart", "status", "daemon-reload"]) {
     assert.match(help.stdout, new RegExp(`\\b${word}\\b`));
   }
+  assert.match(help.stdout, /systemctl --user daemon-reload/);
+  assert.match(help.stdout, /do not run daemon-reload/i);
   const unknown = run(["frob"], { PATH: "/usr/bin:/bin", LANG: "C" });
   assert.equal(unknown.status, 2);
   const bare = run([], { PATH: "/usr/bin:/bin", LANG: "C" });
@@ -421,6 +430,7 @@ test("start fills an empty user bus before systemctl --user", async () => {
     assert.equal(result.stdout.trim(), `console: http://127.0.0.1:${current.port}/#token=tokBUS`);
     const log = await readLog(state);
     assert.match(log, /^--user start mingle-cli$/m);
+    assert.equal(log.includes("daemon-reload"), false);
     assert.equal(log.includes(`env XDG=${runtimeDir}`), true);
     assert.equal(log.includes(`env DBUS=unix:path=${runtimeDir}/bus`), true);
     assert.equal(result.stderr.includes("enable-linger"), false);
@@ -749,6 +759,182 @@ printf 'PATH:%s\\n' "$PATH"
   }
 });
 
+test("daemon-reload fills an empty user bus and calls systemctl --user daemon-reload", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mingle-svc-dreload-"));
+  const servers = [];
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    const runtimeDir = path.join(root, "run");
+    await mkdir(state, { recursive: true });
+    await mkdir(runtimeDir, { recursive: true });
+    await fakeSystemctl(bin, state);
+    servers.push(await listenSocket(path.join(runtimeDir, "bus")));
+    const result = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      MINGLE_CLI_SERVICE_RUNTIME_DIR: runtimeDir,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    const log = await readLog(state);
+    assert.match(log, /^--user daemon-reload$/m);
+    assert.equal(log.includes(`env XDG=${runtimeDir}`), true);
+    assert.equal(log.includes(`env DBUS=unix:path=${runtimeDir}/bus`), true);
+    assert.equal(log.includes(" start "), false);
+    assert.equal(log.includes("enable"), false);
+    assert.equal(result.stderr.includes("enable-linger"), false);
+
+    await writeFile(path.join(state, "log"), "");
+    const empty = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      XDG_RUNTIME_DIR: "",
+      DBUS_SESSION_BUS_ADDRESS: "",
+      MINGLE_CLI_SERVICE_RUNTIME_DIR: runtimeDir,
+    });
+    assert.equal(empty.status, 0, empty.stderr);
+    const filled = await readLog(state);
+    assert.match(filled, /^--user daemon-reload$/m);
+    assert.equal(filled.includes(`env XDG=${runtimeDir}`), true);
+    assert.equal(filled.includes(`env DBUS=unix:path=${runtimeDir}/bus`), true);
+  } finally {
+    await closeAll(servers);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("daemon-reload keeps bus variables that are already set", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mingle-svc-dreload-keep-"));
+  const servers = [];
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    const runtimeDir = path.join(root, "run");
+    const preset = path.join(root, "preset-xdg");
+    await mkdir(state, { recursive: true });
+    await mkdir(runtimeDir, { recursive: true });
+    await mkdir(preset, { recursive: true });
+    await fakeSystemctl(bin, state);
+    servers.push(await listenSocket(path.join(runtimeDir, "bus")));
+    servers.push(await listenSocket(path.join(preset, "bus")));
+    const result = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      XDG_RUNTIME_DIR: preset,
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/kept/bus",
+      MINGLE_CLI_SERVICE_RUNTIME_DIR: runtimeDir,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const log = await readLog(state);
+    assert.match(log, /^--user daemon-reload$/m);
+    assert.equal(log.includes(`env XDG=${preset}`), true);
+    assert.equal(log.includes("env DBUS=unix:path=/kept/bus"), true);
+    assert.equal(log.includes(runtimeDir), false);
+    assert.equal(log.includes(`unix:path=${preset}/bus`), false);
+  } finally {
+    await closeAll(servers);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("daemon-reload stops before systemctl when the runtime directory is missing", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mingle-svc-dreload-nodir-"));
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    const missing = path.join(root, "no-such-runtime");
+    await mkdir(state, { recursive: true });
+    await fakeSystemctl(bin, state);
+    const result = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      MINGLE_CLI_SERVICE_RUNTIME_DIR: missing,
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /cannot connect to the user service bus/);
+    assert.match(result.stderr, /sudo loginctl enable-linger "\$USER"/);
+    assert.match(result.stderr, /sudo systemctl start user@/);
+    assert.match(result.stderr, /Do not run systemctl --user as root/);
+    assert.match(result.stderr, /does not enable the mingle-cli unit/);
+    assert.equal(result.stderr.includes(missing), true);
+    assert.equal(await readLog(state), "");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("daemon-reload stops before systemctl when the bus socket is missing", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mingle-svc-dreload-nobus-"));
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    const runtimeDir = path.join(root, "run");
+    await mkdir(state, { recursive: true });
+    await mkdir(runtimeDir, { recursive: true });
+    await fakeSystemctl(bin, state);
+    const result = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      MINGLE_CLI_SERVICE_RUNTIME_DIR: runtimeDir,
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /sudo loginctl enable-linger "\$USER"/);
+    assert.match(result.stderr, /sudo systemctl start user@/);
+    assert.match(result.stderr, /Do not run systemctl --user as root/);
+    assert.equal(result.stderr.includes(`${runtimeDir}/bus`), true);
+    assert.equal(await readLog(state), "");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("daemon-reload is refused for root before systemctl", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mingle-svc-dreload-root-"));
+  try {
+    const bin = path.join(root, "bin");
+    const state = path.join(root, "state");
+    await mkdir(state, { recursive: true });
+    await fakeSystemctl(bin, state);
+    await writeExec(
+      path.join(bin, "id"),
+      `#!/bin/sh
+if [ "$1" = "-u" ]; then
+  printf '%s\\n' 0
+  exit 0
+fi
+exec /usr/bin/id "$@"
+`,
+    );
+    const result = run(["daemon-reload"], {
+      HOME: path.join(root, "user"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      STATE: state,
+      LANG: "C",
+      XDG_RUNTIME_DIR: "/run/user/0",
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/0/bus",
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /do not run systemctl --user as root/i);
+    assert.match(result.stderr, /sudo loginctl enable-linger "\$USER"/);
+    assert.match(result.stderr, /does not run enable-linger/);
+    assert.match(result.stderr, /does not enable the unit/);
+    assert.equal(await readLog(state), "");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("readmes document the user-bus fill-in and leave the one-line install unpinned", async () => {
   for (const name of ["README.md", "README.zh-CN.md"]) {
     const text = await readFile(new URL(`../${name}`, import.meta.url), "utf8");
@@ -756,7 +942,14 @@ test("readmes document the user-bus fill-in and leave the one-line install unpin
     assert.match(text, /DBUS_SESSION_BUS_ADDRESS/);
     assert.match(text, /unix:path=\$XDG_RUNTIME_DIR\/bus/);
     assert.match(text, /sudo loginctl enable-linger "\$USER"/);
+    assert.match(text, /sudo systemctl start user@\$\(id -u\)/);
     assert.match(text, /mingle-cli-service start/);
+    assert.match(text, /mingle-cli-service daemon-reload/);
+    assert.match(text, /mingle-cli-service restart/);
+    assert.match(text, /mingle-cli-service daemon-reload\nmingle-cli-service restart/);
+    assert.match(text, /mingle-cli-service daemon-reload\nmingle-cli-service start/);
+    assert.match(text, /do not call `daemon-reload`|不会调用 `daemon-reload`/);
+    assert.match(text, /does not enable the unit|不会 enable 单元/);
     assert.match(text, /curl -fsSL https:\/\/raw\.githubusercontent\.com\/AgentsRepos\/mingle-cli\/main\/install\.sh \| sh/);
     assert.equal(text.includes("install.sh@v"), false);
     assert.equal(text.includes("raw.githubusercontent.com/AgentsRepos/mingle-cli/v0.4.11"), false);
