@@ -209,6 +209,8 @@ Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/d
 
 加上这个文件之后，先重新加载拥有该单元的管理器，再重启服务。用户单元执行 `mingle-cli-service daemon-reload`，然后 `mingle-cli-service restart`。系统模板执行 `sudo systemctl daemon-reload`，然后 `sudo systemctl restart mingle-cli@alice`。
 
+Mingle 拉起的 `acp` profile 所用的第三方提供方，配置在你自己的 DSH 家目录里；本软件包不会安装它们。见 [acp profile 的第三方 DSH 提供方](docs/dsh.zh-CN.md)。
+
 在你自己的用户 shell 里，包括这两个变量为空、但 `/run/user/$(id -u)` 和总线套接字已经存在的 SSH 会话，同一个 helper 管理用户单元。下面这些命令不需要先做上面的 `export`：
 
 ```sh

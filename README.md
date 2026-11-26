@@ -209,6 +209,8 @@ Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/d
 
 After adding that file, reload the manager that owns the unit, then restart it. For the user unit, run `mingle-cli-service daemon-reload` and then `mingle-cli-service restart`. For the system template, run `sudo systemctl daemon-reload` and then `sudo systemctl restart mingle-cli@alice`.
 
+Third-party providers for the `acp` profile that Mingle starts are configured in your own DSH home; this package does not install them. See [Third-party DSH providers for the acp profile](docs/dsh.md).
+
 From your own user shell, including an SSH session where those two variables are empty but `/run/user/$(id -u)` and the bus socket already exist, the same helper controls the user unit. These commands do not need the `export` above:
 
 ```sh
