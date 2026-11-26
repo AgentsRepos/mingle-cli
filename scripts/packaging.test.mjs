@@ -62,8 +62,8 @@ test("parses GNU sha256sum lines", () => {
 test("upstream pin describes the official release and this package revision", async () => {
   const upstream = await loadUpstream();
   assert.equal(upstream.version, "0.4.11");
-  assert.equal(upstream.packagingVersion, "0.4.11-2");
-  assert.equal(upstream.tag, "v0.4.11-2");
+  assert.equal(upstream.packagingVersion, "0.4.11-3");
+  assert.equal(upstream.tag, "v0.4.11-3");
   assert.equal(
     upstream.archives.amd64.url,
     "https://github.com/earayu/Mingle/releases/download/v0.4.11/mingle-0.4.11-linux-amd64.tar.gz",
