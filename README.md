@@ -43,7 +43,7 @@ The script looks in the current directory first. `curl | sh` uses the directory 
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sh
 ```
 
-On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package also installs `/usr/bin/mingle-cli-service`. User and system units call `mingle-cli-service run`. From your own session, `mingle-cli-service start`, `stop`, `restart`, and `status` control the user unit. When `XDG_RUNTIME_DIR` or `DBUS_SESSION_BUS_ADDRESS` is empty, those commands fill the missing value from `/run/user/$(id -u)` if that directory and its `bus` socket exist. The package's postinst reloads systemd and does not enable or start the service. Details are in [systemd](#systemd).
+On Debian or Ubuntu, run it as root. The latest stable release's `SHA256SUMS` lists the `.tar.gz` archives and the `.deb` packages, so this installs the `.deb` with `dpkg` and the command is `mingle-cli`. The package also installs `/usr/bin/mingle-cli-service`. User and system units call `mingle-cli-service run`. From your own session, `mingle-cli-service start`, `stop`, `restart`, `status`, and `daemon-reload` control the user unit. When `XDG_RUNTIME_DIR` or `DBUS_SESSION_BUS_ADDRESS` is empty, those commands fill the missing value from `/run/user/$(id -u)` if that directory and its `bus` socket exist. The package's postinst reloads systemd and does not enable or start the service. Details are in [systemd](#systemd).
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AgentsRepos/mingle-cli/main/install.sh | sudo sh
@@ -168,9 +168,11 @@ systemctl --user enable --now mingle-cli
 
 If `/run/user/$(id -u)` does not exist yet, run `sudo systemctl start user@$(id -u)` first, or log out and SSH in again, then run the last three lines.
 
-`mingle-cli-service start`, `stop`, `restart`, and `status` call `systemctl --user`. Before that call, the helper fills the two variables when they are empty. If `XDG_RUNTIME_DIR` is empty and `/run/user/$(id -u)` exists, the helper sets it to that path. If `DBUS_SESSION_BUS_ADDRESS` is empty and `$XDG_RUNTIME_DIR/bus` is a socket, the helper sets it to `unix:path=$XDG_RUNTIME_DIR/bus`. A value that is already set stays as it is. `run` leaves both variables alone. systemd already provides them to `ExecStart`.
+When `mingle-cli-service` is installed, `mingle-cli-service daemon-reload` reloads the user manager and fills the bus itself. The `export` above is still how a raw `systemctl --user` reaches the bus, including `systemctl --user enable`.
 
-When that directory is missing, or the bus socket is missing, the helper stops before `systemctl` and tells you to run `sudo loginctl enable-linger "$USER"`. It also tells you not to run `systemctl --user` as root. The helper does not run `enable-linger`, and it does not enable the unit. `daemon-reload` and `enable` are still commands you run yourself, so the `export` above is still how a raw `systemctl --user` reaches the bus.
+`mingle-cli-service start`, `stop`, `restart`, `status`, and `daemon-reload` call `systemctl --user`. Before that call, the helper fills the two variables when they are empty. If `XDG_RUNTIME_DIR` is empty and `/run/user/$(id -u)` exists, the helper sets it to that path. If `DBUS_SESSION_BUS_ADDRESS` is empty and `$XDG_RUNTIME_DIR/bus` is a socket, the helper sets it to `unix:path=$XDG_RUNTIME_DIR/bus`. A value that is already set stays as it is. `run` leaves both variables alone. systemd already provides them to `ExecStart`. `start`, `stop`, `restart`, and `status` do not call `daemon-reload`.
+
+When that directory is missing, or the bus socket is missing, the helper stops before `systemctl` and tells you to run `sudo loginctl enable-linger "$USER"`. If the directory is still missing, it also tells you to run `sudo systemctl start user@$(id -u)`. It tells you not to run `systemctl --user` as root. The helper does not run `enable-linger`, and it does not enable the unit. `enable` is still a command you run yourself.
 
 ```sh
 systemctl --user status mingle-cli
@@ -205,18 +207,19 @@ Mingle treats the DeepSeek Harness as installed when `dsh` is on `PATH`, or when
 Environment=OAR_DSH_BIN=/home/alice/.local/share/mise/installs/node/latest/bin/dsh
 ```
 
-Reload and restart the service you enabled after adding that file.
+After adding that file, reload the manager that owns the unit, then restart it. For the user unit, run `mingle-cli-service daemon-reload` and then `mingle-cli-service restart`. For the system template, run `sudo systemctl daemon-reload` and then `sudo systemctl restart mingle-cli@alice`.
 
-From your own user shell, including an SSH session where those two variables are empty but `/run/user/$(id -u)` and the bus socket already exist, the same helper controls the user unit. These four commands do not need the `export` above:
+From your own user shell, including an SSH session where those two variables are empty but `/run/user/$(id -u)` and the bus socket already exist, the same helper controls the user unit. These commands do not need the `export` above:
 
 ```sh
+mingle-cli-service daemon-reload
 mingle-cli-service start
 mingle-cli-service stop
 mingle-cli-service restart
 mingle-cli-service status
 ```
 
-`start` starts the user unit. When the unit is already running, it leaves that process in place. It waits until the process is listening, then prints the console URL in this terminal, including `#token=`. If the unit was already running, that line is the current URL. `restart` restarts the unit and waits until the new process is listening, then prints the new URL. The token in that line is the one created by the new process. `stop` stops the user unit. `status` shows `systemctl --user status` and, when the console is listening, the same URL.
+`daemon-reload` runs `systemctl --user daemon-reload`. It reloads unit files that changed on disk. It does not start, stop, or enable the unit. `start` starts the user unit. When the unit is already running, it leaves that process in place. It waits until the process is listening, then prints the console URL in this terminal, including `#token=`. If the unit was already running, that line is the current URL. `restart` restarts the unit and waits until the new process is listening, then prints the new URL. The token in that line is the one created by the new process. `stop` stops the user unit. `status` shows `systemctl --user status` and, when the console is listening, the same URL. `start`, `stop`, `restart`, and `status` leave the loaded unit definition alone.
 
 These commands do not enable the unit. They do not run `mingle open`, and they do not need a display. The URL is taken from `~/.mingle/runtime.json`, or from `$MINGLE_HOME/runtime.json` when `MINGLE_HOME` is set. It is printed only after that port accepts a connection. Set `MINGLE_HOME` in a unit drop-in as well when the service should use the same directory.
 
@@ -230,13 +233,19 @@ env -i HOME="$HOME" USER="$USER" \
 
 The system template is still controlled with `sudo systemctl`, for example `sudo systemctl restart mingle-cli@alice`. `mingle-cli-service start` talks to the user unit only.
 
-After a package upgrade, restart the service you enabled so it picks up the new files. For the user unit, this also prints the new console URL:
+After a package upgrade, a user unit file on disk can differ from the copy the user manager has loaded. `mingle-cli-service restart` restarts the process and prints the new console URL. Reloading the changed unit file is a separate step, and `restart` does not do it. Run `daemon-reload` first, then `restart`. If the user unit is stopped, use `start` after `daemon-reload`:
 
 ```sh
+mingle-cli-service daemon-reload
 mingle-cli-service restart
-# or, for the system template:
-sudo systemctl restart mingle-cli@alice
 ```
+
+```sh
+mingle-cli-service daemon-reload
+mingle-cli-service start
+```
+
+The package postinst runs `systemctl daemon-reload` for the system manager. Restart a system instance you already enabled with `sudo systemctl restart mingle-cli@alice`. `mingle-cli-service daemon-reload` talks to the user manager only, and it does not enable the unit.
 
 Removing the package stops system template instances. Stop a user instance yourself first:
 

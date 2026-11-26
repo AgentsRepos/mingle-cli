@@ -8,11 +8,14 @@
 #   stop     systemctl --user stop
 #   restart  systemctl --user restart, then print the new console URL
 #   status   systemctl --user status, plus the console URL when it is up
+#   daemon-reload
+#            systemctl --user daemon-reload. Does not start or enable.
 #
-# start、stop、restart、status 在调用 systemctl --user 之前补齐空的
+# start、stop、restart、status、daemon-reload 在调用 systemctl --user 之前补齐空的
 # XDG_RUNTIME_DIR 与 DBUS_SESSION_BUS_ADDRESS。已经设置的值不覆盖。
 # 运行时目录或总线套接字不存在时只打印说明并退出，不执行 enable-linger，
-# 也不 enable 单元。run 不改这两个变量：systemd 的 ExecStart 已带上环境。
+# 也不 enable 单元。start、stop、restart、status 不会自动 daemon-reload。
+# run 不改这两个变量，也不调用 systemctl：systemd 的 ExecStart 已带上环境。
 #
 # start leaves an already running user unit alone. restart waits until the
 # new process is listening and its admin token differs from the previous one.
@@ -37,17 +40,24 @@ upstream Mingle command, and it does not enable the unit.
   stop      stop the user unit
   restart   restart the user unit, then print the new console URL
   status    show the user unit status and, when listening, the console URL
+  daemon-reload
+            run systemctl --user daemon-reload so the user manager reloads
+            unit files that changed on disk. This does not start, stop, or
+            enable the unit.
   -h, --help
             show this help
 
-start, stop, restart, and status call systemctl --user. If XDG_RUNTIME_DIR
-is unset or empty and /run/user/<uid> exists, it is set to that directory.
-If DBUS_SESSION_BUS_ADDRESS is unset or empty and $XDG_RUNTIME_DIR/bus is a
-socket, it is set to unix:path=$XDG_RUNTIME_DIR/bus. Values that are already
-set are kept. If the runtime directory or bus socket is missing, the
-command stops and tells you to run: sudo loginctl enable-linger "$USER"
+start, stop, restart, status, and daemon-reload call systemctl --user.
+If XDG_RUNTIME_DIR is unset or empty and /run/user/<uid> exists, it is set
+to that directory. If DBUS_SESSION_BUS_ADDRESS is unset or empty and
+$XDG_RUNTIME_DIR/bus is a socket, it is set to unix:path=$XDG_RUNTIME_DIR/bus.
+Values that are already set are kept. If the runtime directory or bus
+socket is missing, the command stops and tells you to run:
+sudo loginctl enable-linger "$USER"
 Do not run systemctl --user as root. The helper does not run enable-linger
 and does not enable the unit. run does not change those two variables.
+start, stop, restart, and status do not run daemon-reload. After a unit
+file changes on disk, run daemon-reload, then start or restart.
 EOF
 }
 
@@ -500,6 +510,10 @@ main() {
     status)
       require_no_args "$@"
       cmd_status
+      ;;
+    daemon-reload)
+      require_no_args "$@"
+      user_systemctl daemon-reload
       ;;
     *)
       echo "mingle-cli-service: unknown command: $cmd" >&2
