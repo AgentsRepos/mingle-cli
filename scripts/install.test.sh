@@ -83,36 +83,36 @@ EOF
 chmod 755 "${bin}/curl"
 
 pkg_dir=${work}/pkg
-mkdir -p "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime" \
-  "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/payload/dist/cli"
-printf '%s\n' '#!/bin/sh' 'echo 0.4.11' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli"
-printf '%s\n' '#!/bin/sh' 'echo service' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli-service"
-printf 'node\n' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime/node"
-printf 'console\n' > "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/payload/dist/cli/main.js"
-chmod 755 "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli" \
-  "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/mingle-cli-service" \
-  "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64/runtime/node"
-tar -C "$pkg_dir" -czf "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64.tar.gz" mingle-cli-0.4.11-1-linux-amd64
-printf 'deb\n' > "$pkg_dir/mingle-cli_0.4.11-1_amd64.deb"
+mkdir -p "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/runtime" \
+  "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/payload/dist/cli"
+printf '%s\n' '#!/bin/sh' 'echo 0.4.15' > "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/mingle-cli"
+printf '%s\n' '#!/bin/sh' 'echo service' > "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/mingle-cli-service"
+printf 'node\n' > "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/runtime/node"
+printf 'console\n' > "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/payload/dist/cli/main.js"
+chmod 755 "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/mingle-cli" \
+  "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/mingle-cli-service" \
+  "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64/runtime/node"
+tar -C "$pkg_dir" -czf "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64.tar.gz" mingle-cli-0.4.15-1-linux-amd64
+printf 'deb\n' > "$pkg_dir/mingle-cli_0.4.15-1_amd64.deb"
 (
   cd "$pkg_dir"
-  sha256sum mingle-cli-0.4.11-1-linux-amd64.tar.gz mingle-cli_0.4.11-1_amd64.deb > SHA256SUMS
+  sha256sum mingle-cli-0.4.15-1-linux-amd64.tar.gz mingle-cli_0.4.15-1_amd64.deb > SHA256SUMS
 )
 api=${work}/api.json
 cat > "$api" <<'EOF'
 {
-  "tag_name": "v0.4.11-1",
+  "tag_name": "v0.4.15-1",
   "assets": [
-    {"browser_download_url": "https://example.test/releases/download/v0.4.11-1/SHA256SUMS"},
-    {"browser_download_url": "https://example.test/releases/download/v0.4.11-1/mingle-cli-0.4.11-1-linux-amd64.tar.gz"},
-    {"browser_download_url": "https://example.test/releases/download/v0.4.11-1/mingle-cli_0.4.11-1_amd64.deb"}
+    {"browser_download_url": "https://example.test/releases/download/v0.4.15-1/SHA256SUMS"},
+    {"browser_download_url": "https://example.test/releases/download/v0.4.15-1/mingle-cli-0.4.15-1-linux-amd64.tar.gz"},
+    {"browser_download_url": "https://example.test/releases/download/v0.4.15-1/mingle-cli_0.4.15-1_amd64.deb"}
   ]
 }
 EOF
 
 local_dir=${work}/local
 mkdir -p "$local_dir"
-cp "$pkg_dir/SHA256SUMS" "$pkg_dir/mingle-cli-0.4.11-1-linux-amd64.tar.gz" "$local_dir/"
+cp "$pkg_dir/SHA256SUMS" "$pkg_dir/mingle-cli-0.4.15-1-linux-amd64.tar.gz" "$local_dir/"
 log=${work}/curl.log
 : > "$log"
 home=${work}/home
@@ -129,7 +129,7 @@ if grep -q 'linux-amd64.tar.gz' "$log"; then
   fail "local install downloaded the archive: $(cat "$log")"
 fi
 got=$("$home/.local/bin/mingle-cli")
-[ "$got" = "0.4.11" ] || fail "local launcher printed ${got}"
+[ "$got" = "0.4.15" ] || fail "local launcher printed ${got}"
 got_service=$("$home/.local/bin/mingle-cli-service")
 [ "$got_service" = "service" ] || fail "service helper printed ${got_service}"
 printf 'ok local archive\n'
@@ -146,8 +146,8 @@ log2=${work}/curl-download.log
     sh "$install" --download
 )
 [ -f "$dl/SHA256SUMS" ] || fail "download mode did not save SHA256SUMS"
-[ -f "$dl/mingle-cli-0.4.11-1-linux-amd64.tar.gz" ] || fail "download mode did not save the archive"
-[ -f "$dl/mingle-cli_0.4.11-1_amd64.deb" ] || fail "download mode did not save the deb"
+[ -f "$dl/mingle-cli-0.4.15-1-linux-amd64.tar.gz" ] || fail "download mode did not save the archive"
+[ -f "$dl/mingle-cli_0.4.15-1_amd64.deb" ] || fail "download mode did not save the deb"
 [ ! -e "$dl/install.sh" ] || fail "download mode wrote install.sh"
 [ ! -e "$dl/.local" ] || fail "download mode installed files"
 printf 'ok download mode\n'

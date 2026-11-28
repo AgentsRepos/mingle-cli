@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
   isForbiddenBundlePath,
@@ -51,25 +52,49 @@ test("flags GUI and non-runtime files inside a staged bundle", () => {
 test("parses GNU sha256sum lines", () => {
   const sums = parseSha256Sums(
     "abc\n" +
-      "787d5db9a097ec7f0e8c3fd571119b2bb31090804a5e21a1e3c10ef20934dfe4  mingle-0.4.11-linux-amd64.tar.gz\n" +
-      "6aca390afd1f270d22bcfc65564e339dfd43ef9a23a3cf5fed06cee26cc4b0a2 *mingle-0.4.11-linux-arm64.tar.gz\n",
+      "4510f31ca4816863b037a77dc5fdcda587d9db2be5946beb642c3d27babd960c  mingle-0.4.15-linux-amd64.tar.gz\n" +
+      "28825c1e64d37e84c2ac5a005182bd9a5ad4c1365abe50e0fad9fe53aa1d7d06 *mingle-0.4.15-linux-arm64.tar.gz\n",
   );
-  assert.equal(sums.get("mingle-0.4.11-linux-amd64.tar.gz"), "787d5db9a097ec7f0e8c3fd571119b2bb31090804a5e21a1e3c10ef20934dfe4");
-  assert.equal(sums.get("mingle-0.4.11-linux-arm64.tar.gz"), "6aca390afd1f270d22bcfc65564e339dfd43ef9a23a3cf5fed06cee26cc4b0a2");
+  assert.equal(sums.get("mingle-0.4.15-linux-amd64.tar.gz"), "4510f31ca4816863b037a77dc5fdcda587d9db2be5946beb642c3d27babd960c");
+  assert.equal(sums.get("mingle-0.4.15-linux-arm64.tar.gz"), "28825c1e64d37e84c2ac5a005182bd9a5ad4c1365abe50e0fad9fe53aa1d7d06");
   assert.equal(sums.has("abc"), false);
 });
 
 test("upstream pin describes the official release and this package revision", async () => {
   const upstream = await loadUpstream();
-  assert.equal(upstream.version, "0.4.11");
-  assert.equal(upstream.packagingVersion, "0.4.11-5");
-  assert.equal(upstream.tag, "v0.4.11-5");
+  assert.equal(upstream.version, "0.4.15");
+  assert.equal(upstream.revision, 1);
+  assert.equal(upstream.packagingVersion, "0.4.15-1");
+  assert.equal(upstream.tag, "v0.4.15-1");
+  assert.equal(
+    upstream.sumsUrl,
+    "https://github.com/earayu/Mingle/releases/download/v0.4.15/SHA256SUMS",
+  );
+  assert.equal(upstream.archives.amd64.filename, "mingle-0.4.15-linux-amd64.tar.gz");
   assert.equal(
     upstream.archives.amd64.url,
-    "https://github.com/earayu/Mingle/releases/download/v0.4.11/mingle-0.4.11-linux-amd64.tar.gz",
+    "https://github.com/earayu/Mingle/releases/download/v0.4.15/mingle-0.4.15-linux-amd64.tar.gz",
   );
-  assert.equal(upstream.archives.amd64.sha256.length, 64);
-  assert.equal(upstream.archives.arm64.sha256.length, 64);
+  assert.equal(
+    upstream.archives.amd64.sha256,
+    "4510f31ca4816863b037a77dc5fdcda587d9db2be5946beb642c3d27babd960c",
+  );
+  assert.equal(upstream.archives.arm64.filename, "mingle-0.4.15-linux-arm64.tar.gz");
+  assert.equal(
+    upstream.archives.arm64.url,
+    "https://github.com/earayu/Mingle/releases/download/v0.4.15/mingle-0.4.15-linux-arm64.tar.gz",
+  );
+  assert.equal(
+    upstream.archives.arm64.sha256,
+    "28825c1e64d37e84c2ac5a005182bd9a5ad4c1365abe50e0fad9fe53aa1d7d06",
+  );
+});
+
+test("package.json version matches the packaging version", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const upstream = await loadUpstream();
+  assert.equal(pkg.version, upstream.packagingVersion);
+  assert.equal(`v${pkg.version}`, upstream.tag);
 });
 
 test("launcher script passes a shell syntax check", () => {

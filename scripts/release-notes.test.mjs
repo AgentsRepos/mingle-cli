@@ -42,6 +42,9 @@ test("release notes include Chinese text and the online installer", async () => 
   assert.match(stdout, /不会自动 enable/);
   assert.match(stdout, /mingle-cli-service/);
   assert.match(stdout, /OAR_DSH_BIN/);
+  assert.match(stdout, new RegExp(upstream.tag.replaceAll(".", "\\.")));
+  assert.match(stdout, /behavior is unchanged/);
+  assert.match(stdout, /行为保持不变/);
   assert.match(stdout, /pull request #16/);
   assert.match(stdout, /mingle-cli-service daemon-reload/);
   assert.match(stdout, /PR #16/);

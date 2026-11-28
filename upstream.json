@@ -1,16 +1,16 @@
 {
   "upstreamRepo": "earayu/Mingle",
   "upstreamUrl": "https://github.com/earayu/Mingle",
-  "upstreamVersion": "0.4.11",
-  "packagingRevision": 5,
+  "upstreamVersion": "0.4.15",
+  "packagingRevision": 1,
   "archives": {
     "amd64": {
-      "filename": "mingle-0.4.11-linux-amd64.tar.gz",
-      "sha256": "787d5db9a097ec7f0e8c3fd571119b2bb31090804a5e21a1e3c10ef20934dfe4"
+      "filename": "mingle-0.4.15-linux-amd64.tar.gz",
+      "sha256": "4510f31ca4816863b037a77dc5fdcda587d9db2be5946beb642c3d27babd960c"
     },
     "arm64": {
-      "filename": "mingle-0.4.11-linux-arm64.tar.gz",
-      "sha256": "6aca390afd1f270d22bcfc65564e339dfd43ef9a23a3cf5fed06cee26cc4b0a2"
+      "filename": "mingle-0.4.15-linux-arm64.tar.gz",
+      "sha256": "28825c1e64d37e84c2ac5a005182bd9a5ad4c1365abe50e0fad9fe53aa1d7d06"
     }
   }
 }

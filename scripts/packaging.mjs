@@ -73,7 +73,7 @@ export async function loadUpstream(url = new URL("../upstream.json", import.meta
   const version = json.upstreamVersion;
   const revision = json.packagingRevision;
   if (!/^\d+\.\d+\.\d+$/.test(version)) {
-    throw new Error(`upstreamVersion must look like 0.4.11, got ${version}`);
+    throw new Error(`upstreamVersion must look like 0.4.15, got ${version}`);
   }
   if (!Number.isInteger(revision) || revision < 1) {
     throw new Error(`packagingRevision must be an integer >= 1, got ${revision}`);

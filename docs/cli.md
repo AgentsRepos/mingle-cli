@@ -4,7 +4,7 @@ English · [简体中文](cli.zh-CN.md)
 
 This page describes the headless `mingle-cli` command shipped by this unofficial packaging project. It is not an official Mingle manual.
 
-The text was taken from a Linux build whose `mingle-cli --version` prints `0.4.11`. Upstream's help still names the command `mingle`. The command installed here is `mingle-cli`. In the examples below, the program's own wording is quoted with `mingle`; type `mingle-cli` when you run it.
+The text was taken from a Linux build whose `mingle-cli --version` prints `0.4.15`. Upstream's help still names the command `mingle`. The command installed here is `mingle-cli`. In the examples below, the program's own wording is quoted with `mingle`; type `mingle-cli` when you run it.
 
 There is no separate help screen for subcommands. `mingle-cli`, `mingle-cli --help`, and `mingle-cli -h` print the same text. A name by itself, such as `agent` or `message`, is rejected:
 
@@ -18,7 +18,7 @@ next: "agent" is not a mingle command; run "mingle --help"
 | Option | What the CLI does |
 | --- | --- |
 | `--help`, `-h` | Print the help text. With no arguments, the same text is printed. |
-| `--version`, `-v` | Print the version only, for example `0.4.11`. |
+| `--version`, `-v` | Print the version only, for example `0.4.15`. |
 | `--json` | The help text says: add `--json` for machine-readable output. |
 
 An unknown option fails before a command runs:
@@ -79,7 +79,7 @@ When a required argument is missing, the CLI prints its own usage line. These ar
 
 `--port` is the listen port shown in help as `7419`. The process still binds `127.0.0.1` only; `--help` has no `--host` option. To reach it from another machine without changing that, see [Reach it from another machine](../README.md#reach-it-from-another-machine). The official web console is included. Without a display, pass `--no-open` and open the printed URL in a browser. `log --lines` defaults to 200 in the help text. A non-integer `--lines` is rejected with `invalid_lines` and the example `--lines 300`.
 
-`mingle-cli proxy` with no further argument is accepted and then requires a running server. In this 0.4.11 CLI, `mingle-cli proxy system`, `mingle-cli proxy off`, and `mingle-cli proxy set` are rejected as `unknown_command`, even though `--help` prints those words on the `proxy` line.
+`mingle-cli proxy` with no further argument is accepted and then requires a running server. In this 0.4.15 CLI, `mingle-cli proxy system`, `mingle-cli proxy off`, and `mingle-cli proxy set` are rejected as `unknown_command`, even though `--help` prints those words on the `proxy` line.
 
 ## Commands for an agent inside a session
 

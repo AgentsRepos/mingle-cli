@@ -4,7 +4,7 @@
 
 本文说明本非官方打包项目提供的无界面命令 `mingle-cli`。它不是官方 Mingle 手册。
 
-内容取自一次 Linux 构建：`mingle-cli --version` 打印 `0.4.11`。上游帮助文本仍把命令写成 `mingle`。这里安装的命令是 `mingle-cli`。下面引用程序原文时保留 `mingle`；你自己执行时请输入 `mingle-cli`。
+内容取自一次 Linux 构建：`mingle-cli --version` 打印 `0.4.15`。上游帮助文本仍把命令写成 `mingle`。这里安装的命令是 `mingle-cli`。下面引用程序原文时保留 `mingle`；你自己执行时请输入 `mingle-cli`。
 
 子命令没有单独的帮助页。`mingle-cli`、`mingle-cli --help` 和 `mingle-cli -h` 打印同一段文字。只写分组名，例如 `agent` 或 `message`，会被拒绝：
 
@@ -18,7 +18,7 @@ next: "agent" is not a mingle command; run "mingle --help"
 | 选项 | CLI 的行为 |
 | --- | --- |
 | `--help`、`-h` | 打印帮助。不带参数时也是这段文字。 |
-| `--version`、`-v` | 只打印版本号，例如 `0.4.11`。 |
+| `--version`、`-v` | 只打印版本号，例如 `0.4.15`。 |
 | `--json` | 帮助末尾写着：加上 `--json` 可得到机器可读输出。 |
 
 未知选项会在命令执行前失败：
@@ -79,7 +79,7 @@ next: Mingle is not running. Start it with "mingle start"
 
 `--port` 是帮助里写的监听端口，示例为 `7419`。进程仍然只绑在 `127.0.0.1` 上，`--help` 里没有 `--host`。若要不改这一点就从其他机器访问，见 [从其他机器访问](../README.zh-CN.md#从其他机器访问)。官方网页控制台包含在本软件包里。没有显示器时请加上 `--no-open`，再用浏览器打开它打印的地址。帮助里 `log --lines` 的默认值是 200。`--lines` 不是整数时会被拒绝，错误码是 `invalid_lines`，示例为 `--lines 300`。
 
-不带后续参数的 `mingle-cli proxy` 会被接受，然后要求服务已经在运行。在这个 0.4.11 的 CLI 里，`mingle-cli proxy system`、`mingle-cli proxy off` 和 `mingle-cli proxy set` 会被当成 `unknown_command` 拒绝，尽管 `--help` 的 `proxy` 那一行写了这几个词。
+不带后续参数的 `mingle-cli proxy` 会被接受，然后要求服务已经在运行。在这个 0.4.15 的 CLI 里，`mingle-cli proxy system`、`mingle-cli proxy off` 和 `mingle-cli proxy set` 会被当成 `unknown_command` 拒绝，尽管 `--help` 的 `proxy` 那一行写了这几个词。
 
 ## 会话内给 agent 用的命令
 
