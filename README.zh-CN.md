@@ -96,7 +96,7 @@ sha256sum -c SHA256SUMS
 
 ### 从其他机器访问
 
-官方 Mingle v0.4.11 把 API 绑在 `127.0.0.1`。`mingle-cli start` 只有 `--port` 和 `--no-open`，没有 `--host`，也不能改成监听 `0.0.0.0`。本打包项目没有改上游的这一行为，也不为此重新发布版本。
+官方 Mingle v0.4.15 把 API 绑在 `127.0.0.1`。`mingle-cli start` 只有 `--port` 和 `--no-open`，没有 `--host`，也不能改成监听 `0.0.0.0`。本打包项目没有改上游的这一行为，也不为此重新发布版本。
 
 `mingle-cli` 已经占用 `127.0.0.1:7419`。不要在同一台机器上再把转发程序绑到 `7419`，`0.0.0.0:7419` 会和它冲突。先安装 `socat`，然后在运行 Mingle 的这台机器上改用另一个对外端口：
 
@@ -259,7 +259,7 @@ systemctl --user disable --now mingle-cli
 
 [earayu/Mingle](https://github.com/earayu/Mingle) 是上游项目。它的 Linux 发行物是一个桌面应用，里面同时带有这个 Node CLI。`mingle-cli` 包装的是已经发布的那个 CLI。它不 fork Mingle 的源代码，也不另写一套 agent 实现。
 
-构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。上游 `0.4.11` 的第一次打包版本是 `0.4.11-1`。当前打包修订号是 `0.4.11-5`。本修订把 PR #16 的 `mingle-cli-service daemon-reload` 带进了包装助手。该命令与 `start`、`stop`、`restart`、`status` 走同一条用户总线路径：在调用 `systemctl --user daemon-reload` 之前，若 `XDG_RUNTIME_DIR` 与 `DBUS_SESSION_BUS_ADDRESS` 未设置且用户管理器已在运行，助手会补上这两个变量。`daemon-reload` 只重新加载单元文件，不会启动、停止或 enable 单元。`start`、`stop`、`restart` 和 `status` 仍然不会调用 `daemon-reload`。它不是官方 Mingle。
+构建时锁定的版本写在 [`upstream.json`](upstream.json)。`upstreamVersion` 是不带 `v` 的官方 release 标签。`packagingRevision` 是本仓库对那一次官方发布的打包修订号。新的上游版本从打包修订号 `1` 开始。当前锁定的是上游 `0.4.15`、打包修订号 `1`，因此软件包版本是 `0.4.15-1`，发行标签是 `v0.4.15-1`。`mingle-cli-service` 的行为保持不变，其中包括来自 PR #16 的 `daemon-reload`。该命令与 `start`、`stop`、`restart`、`status` 走同一条用户总线路径：在调用 `systemctl --user daemon-reload` 之前，若 `XDG_RUNTIME_DIR` 与 `DBUS_SESSION_BUS_ADDRESS` 未设置且用户管理器已在运行，助手会补上这两个变量。`daemon-reload` 只重新加载单元文件，不会启动、停止或 enable 单元。`start`、`stop`、`restart` 和 `status` 仍然不会调用 `daemon-reload`。它不是官方 Mingle。
 
 ## 仓库中不存放上游源代码
 
@@ -283,10 +283,10 @@ npm run build:all
 产物：
 
 ```text
-dist/mingle-cli-0.4.11-5-linux-amd64.tar.gz
-dist/mingle-cli_0.4.11-5_amd64.deb
-dist/mingle-cli-0.4.11-5-linux-arm64.tar.gz
-dist/mingle-cli_0.4.11-5_arm64.deb
+dist/mingle-cli-0.4.15-1-linux-amd64.tar.gz
+dist/mingle-cli_0.4.15-1_amd64.deb
+dist/mingle-cli-0.4.15-1-linux-arm64.tar.gz
+dist/mingle-cli_0.4.15-1_arm64.deb
 dist/SHA256SUMS
 ```
 
@@ -299,8 +299,8 @@ GitHub Actions 只有在该工作流已经位于默认分支、并且推送了�
 3. 在那个 `main` 提交上，为打包版本打标签（`upstreamVersion` + `-` + `packagingRevision`）：
 
    ```sh
-   git tag v0.4.11-5
-   git push origin v0.4.11-5
+   git tag v0.4.15-1
+   git push origin v0.4.15-1
    ```
 
 4. **Release** 工作流会构建 linux-amd64 和 linux-arm64，运行无界面冒烟测试，并为该标签创建 GitHub Release。它会上传两份压缩包、两个 `.deb` 和 `SHA256SUMS`。

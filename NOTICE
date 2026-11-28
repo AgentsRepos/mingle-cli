@@ -10,9 +10,10 @@ Upstream project: https://github.com/earayu/Mingle
 
 This repository is also MIT licensed. See LICENSE.
 
-The file icon.png is the official Mingle application icon, taken from the
-public v0.4.11 tree at desktop/resources/icon.png. It is an image, not
-Mingle source code.
+The file icon.png is the official Mingle application icon. Its bytes match
+icon.png in the official v0.4.15 Linux archive. The copy committed here was
+taken from the public v0.4.11 tree at desktop/resources/icon.png. It is an
+image, not Mingle source code.
 
 No source code from earayu/Mingle is committed here. Official release
 archives are downloaded when this package is built, checked against the
